@@ -9,6 +9,6 @@ add_executable(project
     main.cpp
 )
 
-target_link_libraries(project glfw)
+target_link_libraries(project SDL3::SDL3)
 target_link_libraries(project glad)
 target_link_libraries(project OpenGL)

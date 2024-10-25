@@ -17,6 +17,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_compile_definitions(LINUX_BUILD DEBUG_BUILD TRACK_HEAP)
 
-add_subdirectory(vendor/glfw)
+add_subdirectory(vendor/SDL)
 add_subdirectory(vendor/glad)
 add_subdirectory(source)

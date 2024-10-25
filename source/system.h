@@ -8,7 +8,7 @@
 #include "defines.h"
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include <SDL3/SDL.h>
 
 namespace Themepark {
 
@@ -20,8 +20,10 @@ typedef struct SystemContext {
   u32 width;
   u32 height;
   u8* appname;
-  GLFWwindow* window;
+  SDL_Window* window;
+  SDL_GLContext glcontext;
   bool fullscreen;
+  bool running;
   ClientStartupCallback client_startup;
   ClientRunCallback client_run;
   ClientShutdownCallback client_shutdown;

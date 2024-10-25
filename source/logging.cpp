@@ -17,7 +17,7 @@ void log(LogLevel level, const u8* message, ...) {
     "TRACE"
   };
 
-  u8 buffer[4096];
+  u8 buffer[2048];
   memset(buffer, 0, sizeof(buffer));
 
   va_list args;

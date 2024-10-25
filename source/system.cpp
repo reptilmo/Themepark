@@ -9,31 +9,28 @@
 namespace Themepark {
 namespace {
 
-void glfw_error_callback(int error, const char* description) {
-  fprintf(stderr, "Error: %s\n", description);
-}
-
-void keyboard_key_callback(GLFWwindow* window, int key, int scancode, int action, int mode) {
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS){
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
-  }
-}
-
-void mouse_position_callback(GLFWwindow* window, double xpos, double ypos) {
-  //TODO:
-}
-
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-  //TODO:
-}
-
 } // anonymous namespace
 
 bool system_startup(SystemContext* context) {
+  context->running = false;
   ASSERT(context != nullptr);
   if (context == nullptr) {
     return false;
   }
+
+  if (!SDL_Init(SDL_INIT_VIDEO)) {
+    LOG_FATAL("SDL failed to initialize!");
+    return false;
+  }
+
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+  SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+  SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+  SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+  SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
   // TODO:
   if (context->width < 800 || context->height < 600) {
@@ -42,42 +39,32 @@ bool system_startup(SystemContext* context) {
     context->height = 600;
   }
 
-  glfwSetErrorCallback(glfw_error_callback);
-  if (!glfwInit()) {
-    LOG_ERROR("SYS failed to initialize GLFW");
-    return false;
-  }
-
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-  //glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
-  //glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_TRUE);
-
   if (context->fullscreen) {
     // TODO:
-    LOG_ERROR("SYS fullscreen is not implemented");
+    LOG_FATAL("SYS fullscreen is not implemented");
     return false;
   
   } else {
-    context->window = glfwCreateWindow(
+    context->window = SDL_CreateWindow(
+        (char*)context->appname,
         context->width,
         context->height,
-        (char*)context->appname,
-        NULL,
-        NULL);
+        SDL_WINDOW_OPENGL);
   }
 
   if (context->window == nullptr) {
+    LOG_FATAL("SYS %s", SDL_GetError());
     return false;
   }
 
-  glfwSetKeyCallback(context->window, keyboard_key_callback);
-  glfwSetCursorPosCallback(context->window, mouse_position_callback);
-  glfwSetMouseButtonCallback(context->window, mouse_button_callback);
-  glfwMakeContextCurrent(context->window);
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-    glfwTerminate();
+  context->glcontext = SDL_GL_CreateContext(context->window);
+  if (context->glcontext == nullptr) {
+    LOG_FATAL("SYS %s", SDL_GetError());
+    return false;
+  }
+
+  if (!gladLoadGL()) {
+    LOG_FATAL("SYS gladLoadGL failed!");
     return false;
   }
 
@@ -91,21 +78,30 @@ bool system_startup(SystemContext* context) {
     LOG_INFO("OpenGL version: %s", version);
   }
 
-  return true;
+  context->running = true;
+  return context->running;
 }
 
 void system_run(SystemContext* context) {
   ASSERT(context != nullptr);
   ASSERT(context->window != nullptr);
+  ASSERT(context->running == true);
   ASSERT(context->client_startup != nullptr);
   ASSERT(context->client_run != nullptr);
   ASSERT(context->client_shutdown != nullptr);
 
   if (context->client_startup()) {
-    while (!glfwWindowShouldClose(context->window)) {
+    SDL_Event close_event;
+    while (context->running) {
+      SDL_PumpEvents();
+      if (SDL_PeepEvents(nullptr, 1,
+            SDL_PEEKEVENT,
+            SDL_EVENT_WINDOW_CLOSE_REQUESTED,
+            SDL_EVENT_WINDOW_CLOSE_REQUESTED) > 0) {
+        context->running = false;
+      }
       context->client_run();
-      glfwSwapBuffers(context->window);
-      glfwPollEvents();
+      SDL_GL_SwapWindow(context->window);
     }
   }
 
@@ -113,10 +109,13 @@ void system_run(SystemContext* context) {
 }
 
 void system_shutdown(SystemContext* context) {
-  if (context->window != nullptr) {
-    glfwDestroyWindow(context->window);
+  if (context->glcontext != nullptr) {
+    SDL_GL_DestroyContext(context->glcontext);
   }
-  glfwTerminate();
+  if (context->window != nullptr) {
+    SDL_DestroyWindow(context->window);
+  }
+  SDL_Quit();
 }
 
 } // namespace Themepark

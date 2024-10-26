@@ -7,9 +7,6 @@
 #include "logging.h"
 
 namespace Themepark {
-namespace {
-
-} // anonymous namespace
 
 bool system_startup(SystemContext* context) {
   context->running = false;
@@ -82,7 +79,7 @@ bool system_startup(SystemContext* context) {
   return context->running;
 }
 
-void system_run(SystemContext* context) {
+void system_run(SystemContext* context, Input* input) {
   ASSERT(context != nullptr);
   ASSERT(context->window != nullptr);
   ASSERT(context->running == true);
@@ -100,7 +97,10 @@ void system_run(SystemContext* context) {
             SDL_EVENT_WINDOW_CLOSE_REQUESTED) > 0) {
         context->running = false;
       }
-      context->client_run();
+      if (input->update(context->window, context->width, context->height)) {
+        context->running = false;
+      }
+      context->client_run(input);
       SDL_GL_SwapWindow(context->window);
     }
   }

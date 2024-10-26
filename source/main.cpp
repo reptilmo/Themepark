@@ -2,6 +2,7 @@
 
 #include "logging.h"
 #include "system.h"
+#include "input.h"
 #include "themepark.h"
 
 int main(int argc, char* argv[]) {
@@ -14,8 +15,10 @@ int main(int argc, char* argv[]) {
   context.client_run = Themepark::themepark_run;
   context.client_shutdown = Themepark::themepark_shutdown;
 
+  Themepark::Input input;
+
   if (Themepark::system_startup(&context)) {
-    Themepark::system_run(&context);
+    Themepark::system_run(&context, &input);
   }
 
   Themepark::system_shutdown(&context);

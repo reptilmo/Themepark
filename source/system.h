@@ -6,6 +6,7 @@
 #pragma once
 
 #include "defines.h"
+#include "input.h"
 
 #include <glad/glad.h>
 #include <SDL3/SDL.h>
@@ -13,7 +14,7 @@
 namespace Themepark {
 
 typedef bool (*ClientStartupCallback)();
-typedef void (*ClientRunCallback)();
+typedef void (*ClientRunCallback)(void*);
 typedef void (*ClientShutdownCallback)();
 
 typedef struct SystemContext {
@@ -31,8 +32,7 @@ typedef struct SystemContext {
 
 bool system_valid_context(SystemContext* context);
 bool system_startup(SystemContext* context);
-void system_run(SystemContext* context);
+void system_run(SystemContext* context, Input* input);
 void system_shutdown(SystemContext* context);
-
 
 } // namespace Themepark

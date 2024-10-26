@@ -8,7 +8,7 @@
 namespace Themepark {
 
 bool themepark_startup();
-void themepark_run();
+void themepark_run(void* param);
 void themepark_shutdown();
 
 } // namespace Themepark

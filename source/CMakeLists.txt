@@ -4,6 +4,8 @@ add_executable(project
     system.cpp
     logging.h
     logging.cpp
+    input.h
+    input.cpp
     themepark.h
     themepark.cpp
     main.cpp

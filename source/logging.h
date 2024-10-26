@@ -13,8 +13,6 @@ enum class LogLevel {
   Fatal,
   Error,
   Info,
-  Debug,
-  Trace,
 };
 
 void log(LogLevel level, const u8* message, ...);

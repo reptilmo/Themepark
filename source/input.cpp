@@ -18,9 +18,9 @@ Input::Input()
 , mouse_primary(0)
 , mouse_secondary(1)
 , mouse_tertiary(2)
-, delta_x(0.0f)
-, delta_y(0.0f)
-, mouse_sensitivity(0.5f) {
+, delta_x(0.0F)
+, delta_y(0.0F)
+, mouse_sensitivity(0.5F) {
     
   memset(keyboard_keys, 0, sizeof(keyboard_keys));
   memset(mouse_buttons, 0, sizeof(mouse_buttons));
@@ -38,7 +38,7 @@ bool Input::update(void* window, u32 width, u32 height) {
   i32 key_count = 0;
   const auto key_state = SDL_GetKeyboardState(&key_count);
 
-  if (key_state[SDL_SCANCODE_ESCAPE]) {
+  if (key_state[SDL_SCANCODE_ESCAPE]) { // TODO:
     return true; // User quit.
   }
 
@@ -74,8 +74,8 @@ bool Input::update(void* window, u32 width, u32 height) {
     SDL_HideCursor();
     SDL_WarpMouseInWindow((SDL_Window*)window, width >> 1, height >> 1);
   } else {
-    delta_x = 0;
-    delta_y = 0;
+    delta_x = 0.0F;
+    delta_y = 0.0F;
     SDL_ShowCursor();
   }
 

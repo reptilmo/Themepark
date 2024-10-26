@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <math.h>
+#include <immintrin.h>
 
 // Unsigned integers
 using u8 = unsigned char;

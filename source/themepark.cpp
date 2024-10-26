@@ -4,6 +4,8 @@
 // Themepark
 
 #include "defines.h"
+#include "logging.h"
+#include "vec3.h"
 
 #include <glad/glad.h>
 
@@ -71,11 +73,11 @@ void themepark_run(void* param) {
   glBindVertexArray(vao);
   glDrawArrays(GL_TRIANGLES, 0, 3);
   glBindVertexArray(0);
+
+  LOG_INFO("RSQRT(4) = %.6f", Math::rsqrt(4.0F));
 }
 
 void themepark_shutdown() {
-
-
 }
 
 } // namespace Themepark

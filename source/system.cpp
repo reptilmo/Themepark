@@ -104,7 +104,6 @@ void system_run(SystemContext* context, Input* input) {
       SDL_GL_SwapWindow(context->window);
     }
   }
-
   context->client_shutdown();
 }
 

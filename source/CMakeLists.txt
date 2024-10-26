@@ -1,5 +1,7 @@
 add_executable(project
     defines.h
+    math.h
+    vec3.h
     system.h
     system.cpp
     logging.h

@@ -35,7 +35,6 @@ public:
   void free(void* memory);
 };
 
-
 class DynamicAllocator final {
   DISABLE_COPY_AND_MOVE(DynamicAllocator)
 public:

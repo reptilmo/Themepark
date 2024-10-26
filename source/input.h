@@ -27,8 +27,8 @@ public:
   bool mouse_primary_pressed();
   bool mouse_secondary_pressed();
   bool mouse_tertiary_pressed();
-  float mouse_delta_x();
-  float mouse_delta_y();
+  f32 mouse_delta_x();
+  f32 mouse_delta_y();
 
 private:
   bool keyboard_keys[512];
@@ -43,10 +43,10 @@ private:
   i32 mouse_secondary;
   i32 mouse_tertiary;
 
-  i32 delta_x;
-  i32 delta_y;
+  f32 delta_x;
+  f32 delta_y;
 
-  float mouse_sensitivity;
+  f32 mouse_sensitivity;
 };
 
 } // namespace Themepark

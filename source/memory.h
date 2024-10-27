@@ -5,16 +5,13 @@
 
 #pragma once
 
-#include "platform.h"
+#include "defines.h"
 
 namespace Themepark {
 
 constexpr u64 KiB(u64 value) { return value * 1024ULL; }
 constexpr u64 MiB(u64 value) { return value * 1024ULL * 1024ULL; }
 constexpr u64 GiB(u64 value) { return value * 1024ULL * 1024ULL * 1024ULL; }
-
-b8 memory_system_startup(u64 global_initial_capacity);
-void memory_system_shutdown();
 
 enum class MemoryTag {
   Unknown,
@@ -38,15 +35,14 @@ public:
 class DynamicAllocator final {
   DISABLE_COPY_AND_MOVE(DynamicAllocator)
 public:
-  static DynamicAllocator& get();
   DynamicAllocator() = default;
   ~DynamicAllocator() = default;
 
-  b8 startup(u64 size);
+  bool startup(u64 size);
   void shutdown();
 
   void* allocate(u64 size, MemoryTag tag);
-  b8 free(void* memory, u64 size, MemoryTag tag);
+  void free(void* memory, u64 size, MemoryTag tag);
   
 private:
   u8* memory_{};
@@ -67,11 +63,6 @@ private:
   AllocNode* alloc_list_head_{};
 };
 
-
-void* memory_allocate(u64 size, MemoryTag tag);
-void memory_free(void* memory, u64 size, MemoryTag tag);
-void memory_copy(void* dest, void* src, u64 size);
-void memory_fill(void* memory, i32 value, u64 size);
-void memory_log_stats();
+void memory_report_stats();
 
 } // namespace Themepark

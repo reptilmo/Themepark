@@ -1,7 +1,12 @@
 // main.cpp
+// Kostya Leshenko
+// CS447P
+// Themepark
+
 
 #include "logging.h"
 #include "system.h"
+#include "memory.h"
 #include "input.h"
 #include "themepark.h"
 
@@ -22,5 +27,6 @@ int main(int argc, char* argv[]) {
   }
 
   Themepark::system_shutdown(&context);
+  Themepark::memory_report_stats();
   return 0;
 }

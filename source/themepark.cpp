@@ -5,17 +5,12 @@
 
 #include "defines.h"
 #include "logging.h"
+#include "memory.h"
 #include "vec3.h"
 
 #include <glad/glad.h>
 
 namespace Themepark {
-
-const f32 triangle[] = {
-  0.0f, 0.5f, 0.0f,
-  0.5f, -0.5f, 0.0f,
-  -0.5f, -0.5f, 0.0f,
-};
 
 const char* vertex_shader = 
 "#version 400\n"
@@ -35,12 +30,29 @@ const char* fragment_shader =
 u32 vao = 0;
 u32 shader_program = 0;
 
+DynamicAllocator allocator;
+
 
 bool themepark_startup() {
+  if (!allocator.startup(MiB(2))) {
+    return false;
+  }
+
+  vec3* triangle = (vec3*) allocator.allocate(sizeof(vec3) * 3, MemoryTag::Mesh);
+  if (triangle == nullptr) {
+    return false;
+  }
+
+  triangle[0].set(0.0f, 0.5f, 0.0f);
+  triangle[1].set(0.5f, -0.5f, 0.0f);
+  triangle[2].set(-0.5f, -0.5f, 0.0f);
+
   u32 vbo = 0;
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), triangle, GL_STATIC_DRAW);
+
+  allocator.free(triangle, sizeof(vec3) * 3, MemoryTag::Mesh);
 
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
@@ -73,11 +85,10 @@ void themepark_run(void* param) {
   glBindVertexArray(vao);
   glDrawArrays(GL_TRIANGLES, 0, 3);
   glBindVertexArray(0);
-
-  LOG_INFO("RSQRT(4) = %.6f", Math::rsqrt(4.0F));
 }
 
 void themepark_shutdown() {
+  allocator.shutdown();
 }
 
 } // namespace Themepark

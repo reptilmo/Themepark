@@ -35,4 +35,13 @@ bool system_startup(SystemContext* context);
 void system_run(SystemContext* context, Input* input);
 void system_shutdown(SystemContext* context);
 
+typedef struct SystemMutex {
+  SDL_Mutex* mutex;
+} SystemMutex;
+
+bool system_mutex_create(SystemMutex* m);
+void system_mutex_lock(SystemMutex* m);
+void system_mutex_unlock(SystemMutex* m);
+void system_mutex_destroy(SystemMutex* m);
+
 } // namespace Themepark

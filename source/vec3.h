@@ -19,6 +19,12 @@ struct vec3 final {
   vec3(f32 a, f32 b, f32 c) : x(a), y(b), z(c) {}
   vec3(const f32* v) : x(v[0]), y(v[1]), z(v[2]) {}
 
+  void set(f32 a, f32 b, f32 c) {
+    x = a;
+    y = b;
+    z = c;
+  }
+
   vec3& operator+=(const vec3& v) {
     x += v.x;
     y += v.y;

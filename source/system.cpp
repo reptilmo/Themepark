@@ -31,14 +31,14 @@ bool system_startup(SystemContext* context) {
 
   // TODO:
   if (context->width < 800 || context->height < 600) {
-    LOG_INFO("SYS setting resolution to 800x600");
+    LOG_INFO("Setting resolution to 800x600");
     context->width = 800;
     context->height = 600;
   }
 
   if (context->fullscreen) {
     // TODO:
-    LOG_FATAL("SYS fullscreen is not implemented");
+    LOG_FATAL("Fullscreen is not implemented");
     return false;
   
   } else {
@@ -50,18 +50,18 @@ bool system_startup(SystemContext* context) {
   }
 
   if (context->window == nullptr) {
-    LOG_FATAL("SYS %s", SDL_GetError());
+    LOG_FATAL("System: %s", SDL_GetError());
     return false;
   }
 
   context->glcontext = SDL_GL_CreateContext(context->window);
   if (context->glcontext == nullptr) {
-    LOG_FATAL("SYS %s", SDL_GetError());
+    LOG_FATAL("System: %s", SDL_GetError());
     return false;
   }
 
   if (!gladLoadGL()) {
-    LOG_FATAL("SYS gladLoadGL failed!");
+    LOG_FATAL("System: gladLoadGL failed!");
     return false;
   }
 
@@ -115,6 +115,29 @@ void system_shutdown(SystemContext* context) {
     SDL_DestroyWindow(context->window);
   }
   SDL_Quit();
+}
+
+bool system_mutex_create(SystemMutex* m) {
+  ASSERT(m != nullptr);
+  m->mutex = SDL_CreateMutex();
+  ASSERT(m->mutex != nullptr);
+  return m->mutex == nullptr ? false : true;
+}
+
+void system_mutex_lock(SystemMutex* m) {
+  ASSERT(m != nullptr && m->mutex != nullptr);
+  SDL_LockMutex(m->mutex);
+}
+
+void system_mutex_unlock(SystemMutex* m) {
+  ASSERT(m != nullptr && m->mutex != nullptr);
+  SDL_UnlockMutex(m->mutex);
+}
+
+void system_mutex_destroy(SystemMutex* m) {
+  ASSERT(m != nullptr && m->mutex != nullptr);
+  SDL_DestroyMutex(m->mutex);
+  m->mutex = nullptr;
 }
 
 } // namespace Themepark

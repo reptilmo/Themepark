@@ -1,4 +1,4 @@
-// assert.cpp
+// logging.cpp
 // Kostya Leshenko
 // CS447P
 // Themepark

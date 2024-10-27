@@ -1,4 +1,4 @@
-// defined.h
+// defines.h
 // Kostya Leshenko
 // CS447P
 // Themepark

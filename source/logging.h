@@ -1,4 +1,4 @@
-// assert.h
+// logging.h
 // Kostya Leshenko
 // CS447P
 // Themepark

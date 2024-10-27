@@ -4,6 +4,7 @@
 // Themepark
 
 #include "memory.h"
+#include "system.h"
 #include "logging.h"
 
 namespace Themepark {
@@ -52,38 +53,38 @@ public:
   }
 
   ~HeapAllocationTracker() {
-    platform_mutex_destroy(&mux_);
+    system_mutex_destroy(&mux_);
   }
 
   inline void update_total_up(u64 bytes) {
-    platform_mutex_lock(&mux_);
+    system_mutex_lock(&mux_);
     total_allocated_bytes += bytes;
-    platform_mutex_unlock(&mux_);
+    system_mutex_unlock(&mux_);
   }
 
   inline void update_total_down(u64 bytes) {
-    platform_mutex_lock(&mux_);
+    system_mutex_lock(&mux_);
     total_allocated_bytes -= bytes;
-    platform_mutex_unlock(&mux_);
+    system_mutex_unlock(&mux_);
   }
 
   inline void update_tag_up(MemoryTag tag, u64 bytes) {
-    platform_mutex_lock(&mux_);
+    system_mutex_lock(&mux_);
     tag_allocated_bytes[mtag_int(tag)] += bytes;
     tag_allocation_count[mtag_int(tag)]++;
-    platform_mutex_unlock(&mux_);
+    system_mutex_unlock(&mux_);
   }
 
   inline void update_tag_down(MemoryTag tag, u64 bytes) {
-    platform_mutex_lock(&mux_);
+    system_mutex_lock(&mux_);
     tag_allocated_bytes[mtag_int(tag)] -= bytes;
     tag_allocation_count[mtag_int(tag)]--;
-    platform_mutex_unlock(&mux_);
+    system_mutex_unlock(&mux_);
   }
 
   const char* memory_stats_string() {
     static thread_local char buffer[8192]{};
-    platform_mutex_lock(&mux_);
+    system_mutex_lock(&mux_);
 
     i32 used_len = 0;
     for (u32 i = 0; i < mtag_int(MemoryTag::Count); i++) {
@@ -103,27 +104,29 @@ public:
     u32 u = calc_units(&total);
     snprintf(buffer + used_len, sizeof(buffer) - used_len, "Total %0.2f%s\n", total, XiB[u]);
 
-    platform_mutex_unlock(&mux_);
+    system_mutex_unlock(&mux_);
     return buffer;
   }
 
 private:
   HeapAllocationTracker() {
-    platform_mutex_init(&mux_);
+    system_mutex_create(&mux_);
   }
 
   u64 total_allocated_bytes{};
   u64 tag_allocated_bytes[mtag_int(MemoryTag::Count)]{};
   u64 tag_allocation_count[mtag_int(MemoryTag::Count)]{};
-  platform_mutex mux_{};
+  SystemMutex mux_{};
 };
+
+}
 
 #ifdef TRACK_HEAP
 #define UPDATE_TOTAL_UP(size) HeapAllocationTracker::get().update_total_up((size))
 #define UPDATE_TOTAL_DOWN(size) HeapAllocationTracker::get().update_total_down((size))
 #define UPDATE_TAG_UP(tag, size) HeapAllocationTracker::get().update_tag_up((tag), (size))
 #define UPDATE_TAG_DOWN(tag, size) HeapAllocationTracker::get().update_tag_down((tag), (size))
-#define FILL_FREED(addr, size) platform_memory_fill((addr), 'D', size);
+#define FILL_FREED(addr, size) memset((addr), 'D', size);
 #else
 #define UPDATE_TOTAL_UP(size)
 #define UPDATE_TOTAL_DOWN(size)
@@ -132,59 +135,22 @@ private:
 #define FILL_FREED(addr, size)
 #endif
 
-class DynamicAllocator final {
-  DISABLE_COPY_AND_MOVE(DynamicAllocator)
-public:
-  static DynamicAllocator& get();
-  DynamicAllocator() = default;
-  ~DynamicAllocator() = default;
 
-  b8 startup(u64 size);
-  void shutdown();
-
-  void* allocate(u64 size, MemoryTag tag);
-  b8 free(void* memory, u64 size, MemoryTag tag);
-  
-private:
-  u8* memory_{};
-  u64 memory_size_{};
-  u64 memory_used_{};
-
-  struct AllocNode {
-    AllocNode* next;
-    u8* chunk;
-    u64 chunk_size;
-    u8 freed;
-    MemoryTag tag;
-  };
-
-  AllocNode* find_freed(u64 size);
-  AllocNode* find_previous(u64 size);
-
-  AllocNode* alloc_list_head_{};
-  AllocNode* alloc_list_tail_{};
-};
-
-DynamicAllocator& DynamicAllocator::get() {
-  static DynamicAllocator instance;
-  return instance;
-}
-
-b8 DynamicAllocator::startup(u64 size) {
-  memory_ = (u8*)platform_memory_allocate(size);
+bool DynamicAllocator::startup(u64 size) {
+  memory_ = (u8*)calloc(size, sizeof(u8));
   if (!memory_) {
     LOG_FATAL("DynamicAllocator failed to aquire a block of %d bytes!", size);
-    return FALSE;
+    return false;
   }
 
   memory_size_ = size;
   UPDATE_TOTAL_UP(size);
-  return TRUE;
+  return true;
 }
 
 void DynamicAllocator::shutdown() {
   if (memory_ && memory_size_ > 0) {
-    platform_memory_free(memory_);
+    ::free(memory_);
     UPDATE_TOTAL_DOWN(memory_size_);
   }
 }
@@ -196,7 +162,7 @@ void* DynamicAllocator::allocate(u64 size, MemoryTag tag) {
     
     alloc->chunk_size = size;
     alloc->tag = tag;
-    alloc->freed = FALSE;
+    alloc->freed = false;
 
   } else {
     const u64 total_size = sizeof(AllocNode) + size;
@@ -208,7 +174,7 @@ void* DynamicAllocator::allocate(u64 size, MemoryTag tag) {
       alloc->chunk = (u8*)alloc + sizeof(AllocNode);
       alloc->chunk_size = size;
       alloc->tag = tag;
-      alloc->freed = FALSE;
+      alloc->freed = false;
 
       if (!alloc_list_head_ || alloc_list_head_->chunk_size <= size) {
         alloc->next = alloc_list_head_;
@@ -230,25 +196,19 @@ void* DynamicAllocator::allocate(u64 size, MemoryTag tag) {
   return nullptr;
 }
 
-
-
-b8 DynamicAllocator::free(void* memory, u64 size, MemoryTag tag) {
+void DynamicAllocator::free(void* memory, u64 size, MemoryTag tag) {
   AllocNode* alloc = alloc_list_head_;
 
   for (; alloc != nullptr; alloc = alloc->next) {
     if (alloc->chunk == memory) {
       ASSERT(alloc->chunk_size == size);
       ASSERT(alloc->tag == tag);
-      alloc->freed = TRUE;
+      alloc->freed = true;
       FILL_FREED(alloc->chunk, alloc->chunk_size);
       UPDATE_TAG_DOWN(alloc->tag, alloc->chunk_size);
-      return TRUE;
     }
   }
-
-  return FALSE;
 }
-
 
 DynamicAllocator::AllocNode* DynamicAllocator::find_freed(u64 size) {
   AllocNode* alloc = alloc_list_head_;
@@ -268,8 +228,9 @@ DynamicAllocator::AllocNode* DynamicAllocator::find_previous(u64 size) {
   return alloc;
 }
 
-} // internal namespace
-
-
+void memory_report_stats() {
+  LOG_INFO("~~~~~~~~~~ HEAP ALLOCATIONS ~~~~~~~~~~\n%s",
+      HeapAllocationTracker::get().memory_stats_string());
+}
 
 } // namespace Themepark

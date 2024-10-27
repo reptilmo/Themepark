@@ -2,6 +2,8 @@ add_executable(project
     defines.h
     math.h
     vec3.h
+    memory.h
+    memory.cpp
     system.h
     system.cpp
     logging.h

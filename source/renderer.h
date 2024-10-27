@@ -4,9 +4,12 @@
 
 #pragma once
 
+#include "defines.h"
+
 namespace Themepark {
 
 class Renderer {
+
 public:
   Renderer() = default;
   ~Renderer() = default;
@@ -15,7 +18,7 @@ public:
   void shutdown();
 
   u32 build_shader_program(const DynamicBuffer<u8>* vertex, const DynamicBuffer<u8>* fragment);
-  u32 build_vertex_array(const TriangleMesh* mesh);
+  u32 build_vertex_array(const Mesh* mesh);
 
   void begin_frame();
   void end_frame();

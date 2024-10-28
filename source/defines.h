@@ -47,7 +47,6 @@ static_assert(sizeof(bool) == 1, "Unexpected bool size, must be 1 byte!");
 
 constexpr u32 U32_MAX = UINT_MAX;
 
-
 #ifdef DEBUG_BUILD
 #define ASSERT(expr) \
   do { \
@@ -59,20 +58,9 @@ constexpr u32 U32_MAX = UINT_MAX;
 #define ASSERT(expr)
 #endif
 
-
 #define DISABLE_COPY_AND_MOVE(ClassName) \
   ClassName(const ClassName&) = delete; \
   ClassName& operator= (const ClassName&) = delete; \
   ClassName(ClassName&&) noexcept = delete; \
   ClassName& operator= (ClassName&&) noexcept = delete;
 
-
-void* platform_memory_allocate(u64 size);
-void platform_memory_free(void* memory);
-void platform_memory_fill(void* memory, i32, u64 size);
-
-struct platform_mutex{};
-void platform_mutex_init(platform_mutex* mutex);
-void platform_mutex_destroy(platform_mutex* mutex);
-void platform_mutex_lock(platform_mutex* mutex);
-void platform_mutex_unlock(platform_mutex* mutex); 

@@ -137,7 +137,7 @@ private:
 
 
 bool DynamicAllocator::startup(u64 size) {
-  memory_ = (u8*)calloc(size, sizeof(u8));
+  memory_ = (u8*)::calloc(size, sizeof(u8));
   if (!memory_) {
     LOG_FATAL("DynamicAllocator failed to aquire a block of %d bytes!", size);
     return false;

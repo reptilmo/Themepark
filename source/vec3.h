@@ -1,4 +1,4 @@
-// vec.h
+// vec3.h
 // Kostya Leshenko
 // CS447P
 // Themepark

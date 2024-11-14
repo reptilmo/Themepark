@@ -6,6 +6,7 @@
 #pragma once
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <limits.h>
 #include <signal.h>
 #include <stdio.h>
@@ -45,7 +46,10 @@ static_assert(sizeof(f64) == 8, "Unexpected f64 size, must be 8 bytes!");
 
 static_assert(sizeof(bool) == 1, "Unexpected bool size, must be 1 byte!");
 
-constexpr u32 U32_MAX = UINT_MAX;
+constexpr u32 U32_MAX = UINT32_MAX;
+
+#define MAX_PATH 1024
+#define MAX_READ_LEN 512
 
 #ifdef DEBUG_BUILD
 #define ASSERT(expr) \

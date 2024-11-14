@@ -44,4 +44,6 @@ void system_mutex_lock(SystemMutex* m);
 void system_mutex_unlock(SystemMutex* m);
 void system_mutex_destroy(SystemMutex* m);
 
+const char* system_base_dir(const char* file_name);
+
 } // namespace Themepark

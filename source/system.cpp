@@ -140,4 +140,17 @@ void system_mutex_destroy(SystemMutex* m) {
   m->mutex = nullptr;
 }
 
+const char* system_base_dir(const char* filename) {
+  thread_local static char file_path[MAX_PATH];
+  u64 len = SDL_strlcpy(file_path, SDL_GetBasePath(), MAX_PATH); 
+  if (len + SDL_strlen(filename) >= MAX_PATH) {
+    LOG_ERROR("File path to %s is too long!", filename);
+    return nullptr;
+  }
+  len = SDL_strlcat(file_path, filename, len + SDL_strlen(filename) + 1);
+  file_path[len] = '\0';
+
+  return file_path;
+}
+
 } // namespace Themepark

@@ -42,6 +42,7 @@ constexpr const char* memory_tag_str[mtag_int(MemoryTag::Count)] = {
   "MESH      :",
   "TEXTURE   :",
   "SHADER    :",
+  "RENDERER  :",
 };
 
 class HeapAllocationTracker final {
@@ -197,8 +198,11 @@ void* DynamicAllocator::allocate(u64 size, MemoryTag tag) {
 }
 
 void DynamicAllocator::free(void* memory, u64 size, MemoryTag tag) {
+  if (memory == nullptr && size == 0) {
+    return;
+  }
+  
   AllocNode* alloc = alloc_list_head_;
-
   for (; alloc != nullptr; alloc = alloc->next) {
     if (alloc->chunk == memory) {
       ASSERT(alloc->chunk_size == size);

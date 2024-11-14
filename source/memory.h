@@ -18,6 +18,7 @@ enum class MemoryTag {
   Mesh,
   Texture,
   Shader,
+  Renderer,
 
   Count
 };

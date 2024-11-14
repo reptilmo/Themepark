@@ -4,90 +4,84 @@
 // Themepark
 
 #include "defines.h"
+#include "system.h"
 #include "logging.h"
 #include "memory.h"
-#include "vec3.h"
+#include "mesh.h"
+#include "mat4.h"
+#include "renderer.h"
 
 #include <glad/glad.h>
 
 namespace Themepark {
 
-const char* vertex_shader = 
-"#version 400\n"
-"in vec3 vp;\n"
-"void main() {\n"
-"   gl_Position = vec4(vp, 1.0);\n"
-"}\n";
-
-const char* fragment_shader = 
-"#version 400\n"
-"out vec4 frag_color;\n"
-"void main() {\n"
-"   frag_color = vec4(0.5, 0.0, 0.5, 1.0);\n"
-"}\n";
-
-
-u32 vao = 0;
+u32 va_idx = 0;
 u32 shader_program = 0;
 
 DynamicAllocator allocator;
-
+Renderer renderer;
 
 bool themepark_startup() {
-  if (!allocator.startup(MiB(2))) {
+  if (!allocator.startup(MiB(5))) {
     return false;
   }
 
-  vec3* triangle = (vec3*) allocator.allocate(sizeof(vec3) * 3, MemoryTag::Mesh);
-  if (triangle == nullptr) {
+  if (!renderer.startup(&allocator)) {
     return false;
   }
 
-  triangle[0].set(0.0f, 0.5f, 0.0f);
-  triangle[1].set(0.5f, -0.5f, 0.0f);
-  triangle[2].set(-0.5f, -0.5f, 0.0f);
+  Mesh mesh(&allocator);
+  if (!mesh.load_from_obj(system_base_dir("assets/untitled.obj"))) {
+    return false;
+  }
 
-  u32 vbo = 0;
-  glGenBuffers(1, &vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), triangle, GL_STATIC_DRAW);
+  DynArray<i8> vert_shader;
+  vert_shader.startup(&allocator, MemoryTag::Shader);
+  if (!read_file(&vert_shader, system_base_dir("shaders/vertex.shader"))) {
+    return false;
+  }
 
-  allocator.free(triangle, sizeof(vec3) * 3, MemoryTag::Mesh);
+  DynArray<i8> frag_shader;
+  frag_shader.startup(&allocator, MemoryTag::Shader);
+  if (!read_file(&frag_shader, system_base_dir("shaders/fragment.shader"))) {
+    return false;
+  }
 
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
-  glEnableVertexAttribArray(0);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-  glBindVertexArray(0);
+  shader_program = renderer.build_shader_program(&vert_shader, &frag_shader);
+  vert_shader.shutdown();
+  frag_shader.shutdown();
+  if (shader_program <= 0) {
+    return false;
+  }
 
-  u32 vs = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vs, 1, &vertex_shader, nullptr);
-  glCompileShader(vs);
-
-  u32 fs = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fs, 1, &fragment_shader, nullptr);
-  glCompileShader(fs);
-
-  shader_program = glCreateProgram();
-  glAttachShader(shader_program, vs);
-  glAttachShader(shader_program, fs);
-  glLinkProgram(shader_program);
-
-  glClearColor(0.5f, 0.3f, 0.3f, 1.0f);
+  va_idx = renderer.build_vertex_array(&mesh);
+  renderer.set_clear_color(0.5F, 0.3F, 0.3F);
+  renderer.set_viewport(0, 0, 800, 600); // TODO:
 
   return true;
 }
 
 void themepark_run(void* param) {
-  glClear(GL_COLOR_BUFFER_BIT);
-  glUseProgram(shader_program);
-  glBindVertexArray(vao);
-  glDrawArrays(GL_TRIANGLES, 0, 3);
-  glBindVertexArray(0);
+  renderer.begin_frame();
+  renderer.use_shader_program(shader_program);
+
+  mat4 model = mat4_translate(0, 0, -10.0F);
+  mat4 view = mat4_identity();
+  mat4 projection = mat4_perspective(45.0F, 1.0F, 100.0F, 800/600); //TODO:
+
+  renderer.shader_set_uniform(
+      renderer.shader_uniform_location(shader_program, "M"), model);
+  renderer.shader_set_uniform(
+      renderer.shader_uniform_location(shader_program, "V"), view);
+  renderer.shader_set_uniform(
+      renderer.shader_uniform_location(shader_program, "P"), projection);
+
+  renderer.render_vertex_array(va_idx);
+  renderer.end_frame();
 }
 
 void themepark_shutdown() {
+  renderer.shutdown();
   allocator.shutdown();
 }
 

@@ -22,7 +22,7 @@ DynamicAllocator allocator;
 Renderer renderer;
 
 bool themepark_startup() {
-  if (!allocator.startup(MiB(5))) {
+  if (!allocator.startup(MiB(100))) {
     return false;
   }
 
@@ -31,7 +31,7 @@ bool themepark_startup() {
   }
 
   Mesh mesh(&allocator);
-  if (!mesh.load_from_obj(system_base_dir("assets/untitled.obj"))) {
+  if (!mesh.load_from_obj(system_base_dir("assets/monkey.obj"))) {
     return false;
   }
 

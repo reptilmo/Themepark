@@ -134,6 +134,14 @@ void Renderer::set_clear_color(f32 r, f32 g, f32 b) {
 void Renderer::set_viewport(i32 left, i32 top, i32 width, i32 height) {
   glViewport(left, top, width, height);
 }
+
+void Renderer::enable_depth_test(bool enable) {
+  if (enable) {
+    glEnable(GL_DEPTH_TEST);
+  } else {
+    glDisable(GL_DEPTH_TEST);
+  }
+}
   
 void Renderer::begin_frame() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -153,7 +161,7 @@ void Renderer::render_vertex_array(u32 idx) {
   ASSERT(idx < vertex_arrays.size());
   VertexArray va = vertex_arrays[idx];
   glBindVertexArray(va.vao);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, va.element_count);
+  glDrawArrays(GL_TRIANGLES, 0, va.element_count);
   //glDrawArrays(GL_LINE_LOOP, 0, va.element_count); // TODO:
   glBindVertexArray(0);
 }

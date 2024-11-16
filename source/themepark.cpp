@@ -34,7 +34,7 @@ bool themepark_startup() {
   }
 
   Mesh mesh(&allocator);
-  if (!mesh.load_from_obj(system_base_dir("assets/cube.obj"))) {
+  if (!mesh.load_from_obj(system_base_dir("assets/monkey.obj"))) {
     return false;
   }
 
@@ -63,6 +63,7 @@ bool themepark_startup() {
   va_idx = renderer.build_vertex_array(&mesh);
   renderer.set_clear_color(0.5F, 0.3F, 0.3F);
   renderer.set_viewport(0, 0, 800, 600); // TODO:
+  renderer.enable_depth_test(true);
 
   return true;
 }
@@ -77,11 +78,13 @@ void themepark_run(void* param) {
   mat4 projection = mat4_perspective(45.0F, 0.1F, 100.0F, 800/600); //TODO:
 
   renderer.shader_set_uniform(
-      renderer.shader_uniform_location(shader_program, "M"), model);
+      renderer.shader_uniform_location(shader_program, "model_view"),
+      view * model);
   renderer.shader_set_uniform(
-      renderer.shader_uniform_location(shader_program, "V"), view);
+      renderer.shader_uniform_location(shader_program, "view"),
+      view);
   renderer.shader_set_uniform(
-      renderer.shader_uniform_location(shader_program, "P"), projection);
+      renderer.shader_uniform_location(shader_program, "projection"), projection);
 
   renderer.render_vertex_array(va_idx);
   renderer.end_frame();

@@ -20,11 +20,9 @@ void Camera::startup(const vec3& pos, const vec3& up, f32 yaw, f32 pitch) {
   vertical_angle = pitch;
 }
 
-
 void Camera::shutdown() {
 
 }
-
 
 mat4 Camera::view_matrix(Input* input, f32 delta_time) {
   

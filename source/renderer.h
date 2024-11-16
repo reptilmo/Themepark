@@ -28,6 +28,8 @@ public:
   void set_clear_color(f32 r, f32 g, f32 b);
   void set_viewport(i32 left, i32 top, i32 width, i32 height);
 
+  void enable_depth_test(bool enable);
+
   void begin_frame();
   void end_frame();
 

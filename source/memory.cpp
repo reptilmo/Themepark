@@ -217,7 +217,7 @@ void DynamicAllocator::free(void* memory, u64 size, MemoryTag tag) {
 DynamicAllocator::AllocNode* DynamicAllocator::find_freed(u64 size) {
   AllocNode* alloc = alloc_list_head_;
   for (; alloc != nullptr; alloc = alloc->next) {
-    if (alloc->chunk_size <= size && alloc->freed) {
+    if (size <= alloc->chunk_size && alloc->freed) {
       return alloc;
     }
   }

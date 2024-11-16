@@ -26,6 +26,7 @@ bool read_file(DynArray<i8>* data, const char* filename) {
     total += len;
   }
 
+  fclose(file);
   return total > 0;
 }
 

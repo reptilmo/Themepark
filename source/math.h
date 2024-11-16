@@ -10,7 +10,7 @@
 namespace Themepark {
 namespace Math {
 
-constexpr f32 PI = static_cast<f32>(3.1415926535);
+constexpr f32 PI = static_cast<f32>(M_PI);
 constexpr f32 HALF_PI = PI * 0.5F;
 
 constexpr f32 RADIANS(f32 degrees) { 

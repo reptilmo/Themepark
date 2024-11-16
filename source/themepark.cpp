@@ -10,6 +10,8 @@
 #include "mesh.h"
 #include "mat4.h"
 #include "renderer.h"
+#include "input.h"
+#include "camera.h"
 
 #include <glad/glad.h>
 
@@ -20,6 +22,7 @@ u32 shader_program = 0;
 
 DynamicAllocator allocator;
 Renderer renderer;
+Camera camera;
 
 bool themepark_startup() {
   if (!allocator.startup(MiB(100))) {
@@ -31,7 +34,7 @@ bool themepark_startup() {
   }
 
   Mesh mesh(&allocator);
-  if (!mesh.load_from_obj(system_base_dir("assets/monkey.obj"))) {
+  if (!mesh.load_from_obj(system_base_dir("assets/cube.obj"))) {
     return false;
   }
 
@@ -48,11 +51,14 @@ bool themepark_startup() {
   }
 
   shader_program = renderer.build_shader_program(&vert_shader, &frag_shader);
+
   vert_shader.shutdown();
   frag_shader.shutdown();
   if (shader_program <= 0) {
     return false;
   }
+
+  camera.startup(vec3{0.0F, 0.0F, 5.0F}, vec3(0.0F, 1.0F, 0.0F), -90, 0);
 
   va_idx = renderer.build_vertex_array(&mesh);
   renderer.set_clear_color(0.5F, 0.3F, 0.3F);
@@ -62,12 +68,13 @@ bool themepark_startup() {
 }
 
 void themepark_run(void* param) {
+  Input* input = (Input*)param;
   renderer.begin_frame();
   renderer.use_shader_program(shader_program);
 
-  mat4 model = mat4_translate(0, 0, -10.0F);
-  mat4 view = mat4_identity();
-  mat4 projection = mat4_perspective(45.0F, 1.0F, 100.0F, 800/600); //TODO:
+  mat4 model = mat4_translate(0, 0, -5.0F);
+  mat4 view = camera.view_matrix(input, 0.1F);
+  mat4 projection = mat4_perspective(45.0F, 0.1F, 100.0F, 800/600); //TODO:
 
   renderer.shader_set_uniform(
       renderer.shader_uniform_location(shader_program, "M"), model);

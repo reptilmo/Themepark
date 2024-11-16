@@ -71,8 +71,8 @@ bool Input::update(void* window, u32 width, u32 height) {
     delta_x = x;
     delta_y = y;
 
-    SDL_HideCursor();
     SDL_WarpMouseInWindow((SDL_Window*)window, width >> 1, height >> 1);
+    SDL_HideCursor();
   } else {
     delta_x = 0.0F;
     delta_y = 0.0F;
@@ -111,11 +111,11 @@ bool Input::mouse_tertiary_pressed() {
   return mouse_buttons[mouse_tertiary];
 }
 
-float Input::mouse_delta_x() {
+f32 Input::mouse_delta_x() {
   return delta_x * mouse_sensitivity;
 }
 
-float Input::mouse_delta_y() {
+f32 Input::mouse_delta_y() {
   return delta_y * mouse_sensitivity;
 }
 

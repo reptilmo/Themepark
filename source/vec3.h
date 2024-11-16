@@ -45,6 +45,13 @@ struct vec3 final {
     z *= f;
     return *this;
   }
+
+  void normalize() {
+    const float r = Math::rsqrt(x * x + y * y + z * z);
+    x *= r;
+    y *= r;
+    z *= r;
+  }
 };
 
 inline vec3 operator*(const vec3& v, float s) {
@@ -79,15 +86,8 @@ inline vec3 operator-(const vec3& a, const vec3& b) {
   };
 }
 
-inline float dot(const vec3& a, const vec3& b) {
+inline f32 dot(const vec3& a, const vec3& b) {
   return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-inline void normalize(vec3& v) {
-  const float r = Math::rsqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-  v.x *= r;
-  v.y *= r;
-  v.z *= r;
 }
 
 inline vec3 normalized(const vec3& v) {

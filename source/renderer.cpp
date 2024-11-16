@@ -154,6 +154,7 @@ void Renderer::render_vertex_array(u32 idx) {
   VertexArray va = vertex_arrays[idx];
   glBindVertexArray(va.vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, va.element_count);
+  //glDrawArrays(GL_LINE_LOOP, 0, va.element_count); // TODO:
   glBindVertexArray(0);
 }
 

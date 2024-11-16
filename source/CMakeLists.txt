@@ -16,6 +16,8 @@ add_executable(project
     input.cpp
     mesh.h
     mesh.cpp
+    camera.h
+    camera.cpp
     renderer.h
     renderer.cpp
     themepark.h

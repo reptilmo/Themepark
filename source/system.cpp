@@ -87,7 +87,15 @@ void system_run(SystemContext* context, Input* input) {
   ASSERT(context->client_run != nullptr);
   ASSERT(context->client_shutdown != nullptr);
 
-  if (context->client_startup()) {
+  u64 previous_frame_time = 0;
+  u64 current_frame_time = 0;
+
+  RunContext run_context = {0};
+  run_context.input = input;
+  run_context.width = context->width;
+  run_context.height = context->height;
+
+  if (context->client_startup(run_context.width, run_context.height)) {
     SDL_Event close_event;
     while (context->running) {
       SDL_PumpEvents();
@@ -100,7 +108,12 @@ void system_run(SystemContext* context, Input* input) {
       if (input->update(context->window, context->width, context->height)) {
         context->running = false;
       }
-      context->client_run(input);
+
+      current_frame_time = SDL_GetTicksNS();
+      run_context.delta_time = double(current_frame_time - previous_frame_time) * 1.0e-9;
+      previous_frame_time = current_frame_time;
+
+      context->client_run(&run_context);
       SDL_GL_SwapWindow(context->window);
     }
   }

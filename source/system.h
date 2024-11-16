@@ -13,8 +13,15 @@
 
 namespace Themepark {
 
-typedef bool (*ClientStartupCallback)();
-typedef void (*ClientRunCallback)(void*);
+typedef struct RunContext {
+  Input* input;
+  f64 delta_time;
+  u32 width;
+  u32 height;
+} RunContext;
+
+typedef bool (*ClientStartupCallback)(u32, u32);
+typedef void (*ClientRunCallback)(RunContext* context);
 typedef void (*ClientShutdownCallback)();
 
 typedef struct SystemContext {

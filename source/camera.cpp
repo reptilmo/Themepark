@@ -6,8 +6,8 @@
 #include "camera.h"
 #include "input.h"
 
-#define VIEW_FACTOR 0.5F
-#define MOVE_FACTOR 0.5F
+#define VIEW_FACTOR 10.0F
+#define MOVE_FACTOR 10.0F
 
 namespace Themepark {
 
@@ -20,9 +20,7 @@ void Camera::startup(const vec3& pos, const vec3& up, f32 yaw, f32 pitch) {
   vertical_angle = pitch;
 }
 
-void Camera::shutdown() {
-
-}
+void Camera::shutdown() {}
 
 mat4 Camera::view_matrix(Input* input, f32 delta_time) {
   
@@ -30,8 +28,13 @@ mat4 Camera::view_matrix(Input* input, f32 delta_time) {
   const f32 yaw_delta = VIEW_FACTOR * input->mouse_delta_x() * delta_time;
   const f32 move_factor = MOVE_FACTOR * delta_time;
 
-  vertical_angle -= pitch_delta;
   horizontal_angle += yaw_delta;
+  vertical_angle -= pitch_delta;
+  if (vertical_angle < -90.0F) {
+    vertical_angle = -90.0F;
+  } else if (vertical_angle > 90.0F) {
+    vertical_angle = 90.0F;
+  }
 
   const f32 cos_pitch = cos(RADIANS(vertical_angle));
   const f32 sin_pitch = sin(RADIANS(vertical_angle));
@@ -41,10 +44,12 @@ mat4 Camera::view_matrix(Input* input, f32 delta_time) {
   vec3 front{cos_yaw * cos_pitch, sin_pitch, sin_yaw * cos_pitch};
   front.normalize(); 
   vec3 right = cross(front, world_up);
+  right.normalize();
   vec3 up = cross(right, front);
+  up.normalize();
 
   const mat4 rotation{{
-    right.x, up.x, -front.x, 0,
+    right.x, up.z, -front.x, 0,
     right.y, up.y, -front.y, 0,
     right.z, up.z, -front.z, 0,
     0,       0,    0,        1,

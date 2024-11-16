@@ -24,7 +24,7 @@ DynamicAllocator allocator;
 Renderer renderer;
 Camera camera;
 
-bool themepark_startup() {
+bool themepark_startup(u32 view_width, u32 view_height) {
   if (!allocator.startup(MiB(100))) {
     return false;
   }
@@ -62,20 +62,19 @@ bool themepark_startup() {
 
   va_idx = renderer.build_vertex_array(&mesh);
   renderer.set_clear_color(0.5F, 0.3F, 0.3F);
-  renderer.set_viewport(0, 0, 800, 600); // TODO:
+  renderer.set_viewport(0, 0, view_width, view_height);
   renderer.enable_depth_test(true);
 
   return true;
 }
 
-void themepark_run(void* param) {
-  Input* input = (Input*)param;
+void themepark_run(RunContext* context) {
+  mat4 model = mat4_translate(0, 0, -5.0F);
+  mat4 view = camera.view_matrix(context->input, context->delta_time);
+  mat4 projection = mat4_perspective(45.0F, 0.1F, 100.0F, context->width / context->height);
+
   renderer.begin_frame();
   renderer.use_shader_program(shader_program);
-
-  mat4 model = mat4_translate(0, 0, -5.0F);
-  mat4 view = camera.view_matrix(input, 0.1F);
-  mat4 projection = mat4_perspective(45.0F, 0.1F, 100.0F, 800/600); //TODO:
 
   renderer.shader_set_uniform(
       renderer.shader_uniform_location(shader_program, "model_view"),

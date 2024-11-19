@@ -64,24 +64,24 @@ inline mat4 mat4_perspective(f32 fov, f32 front, f32 back, f32 aspect_ratio) {
   const f32 left = -right;
 
   return mat4{{
-    2 * front / (right - left),
+    front / right, //2 * front / (right - left),
     0,
     0,
     0,
 
     0,
-    2 * front / (top - bottom),
+    front / top, //2 * front / (top - bottom),
     0,
     0,
 
-    (right + left) / (right - left),
-    (top + bottom) / (top - bottom),
+    0,//(right + left) / (right - left),
+    0,//(top + bottom) / (top - bottom),
     -(back + front) / (back - front),
     -1,
 
     0,
     0,
-    -2 * front * back / (back - front),
+    -(2 * front * back) / (back - front),
     0,
   }};
 }

@@ -28,50 +28,46 @@ mat4 Camera::view_matrix(Input* input, f32 delta_time) {
   const f32 yaw_delta = VIEW_FACTOR * input->mouse_delta_x() * delta_time;
   const f32 move_factor = MOVE_FACTOR * delta_time;
 
-  horizontal_angle += yaw_delta;
   vertical_angle -= pitch_delta;
-  if (vertical_angle < -90.0F) {
-    vertical_angle = -90.0F;
-  } else if (vertical_angle > 90.0F) {
-    vertical_angle = 90.0F;
-  }
+  horizontal_angle += yaw_delta;
 
   const f32 cos_pitch = cos(RADIANS(vertical_angle));
   const f32 sin_pitch = sin(RADIANS(vertical_angle));
   const f32 cos_yaw = cos(RADIANS(horizontal_angle));
   const f32 sin_yaw = sin(RADIANS(horizontal_angle));
   
-  vec3 front{cos_yaw * cos_pitch, sin_pitch, sin_yaw * cos_pitch};
-  front.normalize(); 
-  vec3 right = cross(front, world_up);
-  right.normalize();
-  vec3 up = cross(right, front);
-  up.normalize();
+  vec3 forward{cos_yaw * cos_pitch, sin_pitch, sin_yaw * cos_pitch};
+  forward *= -1.0F;
+  forward.normalize();
+  vec3 left = cross(world_up, forward);
+  left.normalize();
+  vec3 up = cross(forward, left);
 
-  const mat4 rotation{{
-    right.x, up.z, -front.x, 0,
-    right.y, up.y, -front.y, 0,
-    right.z, up.z, -front.z, 0,
-    0,       0,    0,        1,
+  const mat4 rotate{{
+    left.x, up.x, forward.x, 0,
+    left.y, up.y, forward.y, 0,
+    left.z, up.z, forward.z, 0,
+    0,      0,    0,         1,
   }};
 
   if (input->move_forward()) {
-    position += (front * move_factor);
+    position -= (forward * move_factor);
   }
 
   if (input->move_back()) {
-    position -= (front * move_factor);
+    position += (forward * move_factor);
   }
 
   if (input->move_right()) {
-    position += (right * move_factor);
+    position += (left * move_factor);
   }
 
   if (input->move_left()) {
-    position -= (right * move_factor);
+    position -= (left * move_factor);
   }
 
-  return mat4_translate(-position.x, -position.y, -position.z) * rotation;
+  return mat4_translate(-position.x, -position.y, -position.z) * rotate;
+  //return rotate * mat4_translate(-position.x, -position.y, -position.z);
 }
 
 } // namespace Themepark

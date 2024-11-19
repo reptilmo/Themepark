@@ -13,8 +13,8 @@
 int main(int argc, char* argv[]) {
   Themepark::SystemContext context = {0};
   context.appname = (u8*)"Themepark";
-  context.width = 640;
-  context.height = 480;
+  context.width = 1027;
+  context.height = 768;
   context.fullscreen = false;
   context.client_startup = Themepark::themepark_startup;
   context.client_run = Themepark::themepark_run;

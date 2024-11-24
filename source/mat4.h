@@ -57,31 +57,31 @@ inline mat4 mat4_translate(f32 x, f32 y, f32 z) {
   }};
 }
 
-inline mat4 mat4_perspective(f32 fov, f32 front, f32 back, f32 aspect_ratio) {
+inline mat4 mat4_perspective(f32 fov, f32 front, f32 back, f32 aspect) {
   const f32 top = front * Math::tan(Math::RADIANS(fov * 0.5F));
-  const f32 bottom = -top;
-  const f32 right = top * aspect_ratio;
+  const f32 right = top * aspect;
   const f32 left = -right;
+  const f32 bottom = -top;
 
   return mat4{{
-    front / right, //2 * front / (right - left),
+    2 * front / (right - left),
     0,
     0,
     0,
 
     0,
-    front / top, //2 * front / (top - bottom),
+    2 * front / (top - bottom),
     0,
     0,
 
-    0,//(right + left) / (right - left),
-    0,//(top + bottom) / (top - bottom),
+    (right + left) / (right - left),
+    (top + bottom) / (top - bottom),
     -(back + front) / (back - front),
     -1,
 
     0,
     0,
-    -(2 * front * back) / (back - front),
+    -2 * front * back / (back - front),
     0,
   }};
 }

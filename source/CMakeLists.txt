@@ -14,6 +14,8 @@ add_executable(project
     logging.cpp
     input.h
     input.cpp
+    image.h
+    image.cpp
     mesh.h
     mesh.cpp
     camera.h

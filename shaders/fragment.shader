@@ -1,18 +1,23 @@
 #version 430 core
 in vec3 position_eye;
 in vec3 normal_eye;
+in vec2 st;
+
 out vec4 frag_color;
 
+uniform sampler2D first_texture;
+uniform sampler2D second_texture;
+
 uniform mat4 view; //TODO
-vec3 light_position = vec3(0.0, 0.0, 2.0); //TODO
+vec3 light_position = vec3(-10.0, 20.0, -10.0); //TODO
 
 // Light colors
-vec3 La = vec3(0.2, 0.2, 0.2); // Ambient
-vec3 Ld = vec3(0.7, 0.7, 0.7); // Diffuse
+vec3 La = vec3(0.4, 0.4, 0.4); // Ambient
+vec3 Ld = vec3(0.9, 0.9, 0.9); // Diffuse
 vec3 Ls = vec3(1.0, 1.0, 1.0); // Specular
 
 // Surface reflectance
-vec3 Ka = vec3(1.0, 1.0, 1.0); // Fully reflect ambient light
+vec3 Ka = vec3(0.0, 0.0, 0.0); // Ambient light reflectance
 vec3 Kd = vec3(1.0, 0.5, 0.0); // Orange diffuse surface reflectance
 vec3 Ks = vec3(1.0, 1.0, 1.0); // Fully reflect specular light
 
@@ -30,7 +35,7 @@ void main() {
   vec3 reflection_eye = reflect(-direction_to_light_eye, normal_eye);
   vec3 surface_to_viewer = normalize(-position_eye);
   d = max(dot(reflection_eye, surface_to_viewer), 0.0);
-  vec3 Is = Ls * Ks * pow(d, specular_power);
-
-  frag_color = vec4(Is + Id + Ia, 1.0);
+  //vec3 Is = Ls * Ks * pow(d, specular_power);
+  vec3 Is = vec3(0.0, 0.0, 0.0);
+  frag_color = vec4(Is + Id + Ia, 1.0) * texture(first_texture, st) * texture(second_texture, st);
 }

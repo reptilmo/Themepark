@@ -37,10 +37,13 @@ bool system_startup(SystemContext* context) {
   }
 
   if (context->fullscreen) {
-    // TODO:
-    LOG_FATAL("Fullscreen is not implemented");
-    return false;
-  
+    //TODO:
+    context->window = SDL_CreateWindow(
+        nullptr,
+        context->width,
+        context->height,
+        SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS);
+
   } else {
     context->window = SDL_CreateWindow(
         (char*)context->appname,
@@ -65,15 +68,19 @@ bool system_startup(SystemContext* context) {
     return false;
   }
 
+  const auto version = glGetString(GL_VERSION);
+  if (version != nullptr) {
+    LOG_INFO("OpenGL version: %s", version);
+  }
+
   const auto renderer = glGetString(GL_RENDERER);
   if (renderer != nullptr) {
     LOG_INFO("Renderer: %s", renderer);
   }
 
-  const auto version = glGetString(GL_VERSION);
-  if (version != nullptr) {
-    LOG_INFO("OpenGL version: %s", version);
-  }
+  u32 texture_units = 0;
+  glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, (GLint*)&texture_units);
+  LOG_INFO("Texture units: %d", texture_units);
 
   context->running = true;
   return context->running;

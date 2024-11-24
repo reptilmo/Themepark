@@ -28,8 +28,13 @@ mat4 Camera::view_matrix(Input* input, f32 delta_time) {
   const f32 yaw_delta = VIEW_FACTOR * input->mouse_delta_x() * delta_time;
   const f32 move_factor = MOVE_FACTOR * delta_time;
 
-  vertical_angle -= pitch_delta;
   horizontal_angle += yaw_delta;
+  vertical_angle -= pitch_delta;
+  if (vertical_angle < -89.0F) {
+    vertical_angle = -89.0F;
+  } else if (vertical_angle > 89.0F) {
+    vertical_angle = 89.0F;
+  }
 
   const f32 cos_pitch = cos(RADIANS(vertical_angle));
   const f32 sin_pitch = sin(RADIANS(vertical_angle));
@@ -67,7 +72,6 @@ mat4 Camera::view_matrix(Input* input, f32 delta_time) {
   }
 
   return mat4_translate(-position.x, -position.y, -position.z) * rotate;
-  //return rotate * mat4_translate(-position.x, -position.y, -position.z);
 }
 
 } // namespace Themepark

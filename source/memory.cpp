@@ -169,7 +169,7 @@ void* DynamicAllocator::allocate(u64 size, MemoryTag tag) {
     const u64 total_size = sizeof(AllocNode) + size;
     
     if (total_size <= memory_size_ - memory_used_) {
-      alloc = (AllocNode*)memory_ + memory_used_;
+      alloc = (AllocNode*)(memory_ + memory_used_);
       memory_used_ += total_size;
 
       alloc->chunk = (u8*)alloc + sizeof(AllocNode);

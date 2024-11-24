@@ -6,6 +6,7 @@
 #include "renderer.h"
 #include "logging.h"
 #include "mesh.h"
+#include "image.h"
 
 #include <glad/glad.h>
 
@@ -100,6 +101,25 @@ void Renderer::shader_set_uniform(i32 location, const mat4& m) {
   glUniformMatrix4fv(location, 1, GL_FALSE, m.m);
 }
 
+void Renderer::shader_set_uniform(i32 location, u32 value) {
+  glUniform1i(location, value);
+}
+
+u32 Renderer::build_texture_2d(const Image* image) {
+  u32 texture_id = 0;
+
+  glGenTextures(1, &texture_id);
+  glBindTexture(GL_TEXTURE_2D, texture_id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height,
+      0, GL_RGB, GL_UNSIGNED_BYTE, image->data);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  return texture_id;
+}
+
 u32 Renderer::build_vertex_array(const Mesh* mesh) {
   VertexArray va = {0};
   
@@ -135,6 +155,14 @@ void Renderer::set_viewport(i32 left, i32 top, i32 width, i32 height) {
   glViewport(left, top, width, height);
 }
 
+void Renderer::enable_texture_mapping(bool enable) {
+  if (enable) {
+    glEnable(GL_TEXTURE_2D);
+  } else {
+    glDisable(GL_TEXTURE_2D);
+  }
+}
+
 void Renderer::enable_depth_test(bool enable) {
   if (enable) {
     glEnable(GL_DEPTH_TEST);
@@ -148,13 +176,17 @@ void Renderer::begin_frame() {
 }
 
 void Renderer::end_frame() {
+  active_texture_units = 0;
 }
 
 void Renderer::use_shader_program(u32 program_handle) {
   glUseProgram(program_handle);
 }
 
-void Renderer::use_texture(u32 texture_handle) {
+void Renderer::use_texture_2d(u32 texture_handle) {
+  glActiveTexture(GL_TEXTURE0 + active_texture_units);
+  glBindTexture(GL_TEXTURE_2D, texture_handle);
+  active_texture_units++;
 }
 
 void Renderer::render_vertex_array(u32 idx) {

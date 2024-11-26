@@ -13,6 +13,11 @@ namespace Themepark {
 
 class Input;
 
+typedef struct CameraMatrixBlock {
+  mat4 rotation;
+  mat4 view;
+} CameraMatrixBlock;
+
 class Camera final {
   DISABLE_COPY_AND_MOVE(Camera);
 public:
@@ -22,7 +27,7 @@ public:
   void startup(const vec3& pos, const vec3& up, f32 yaw, f32 pitch);
   void shutdown();
 
-  mat4 view_matrix(Input* input, f32 delta_time);
+  void update_view_matrices(CameraMatrixBlock* block, Input* input, f32 delta_time);
 
 private:
   vec3 position{};

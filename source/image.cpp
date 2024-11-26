@@ -22,23 +22,9 @@ typedef struct TGAHeader {
   u8 image_descriptor;
 } TGAHeader;
 
-
-Image::Image(DynamicAllocator* alloc) 
-  : data(nullptr)
-  , width(0)
-  , height(0)
-  , bytes_per_pixel(0)
-  , allocator(alloc)
-{}
-
-Image::~Image() {
-  ASSERT(allocator != nullptr);
-  if (data != nullptr) {
-    allocator->free(data, bytes_per_pixel * width * height, MemoryTag::Texture);
-  }
-}
-
-bool Image::load_tga_file(const char* filename) {
+bool load_tga_file(Image* image,
+    DynamicAllocator* allocator,
+    const char* filename) {
 
   FILE* file = fopen(filename, "rb");
   if (file == nullptr) {
@@ -60,25 +46,26 @@ bool Image::load_tga_file(const char* filename) {
     return false;
   }
 
-  bytes_per_pixel = header.image_bits_per_pixel / 8;
+  image->bytes_per_pixel = header.image_bits_per_pixel / 8;
   /*if (bytes_per_pixel != 4) {
     LOG_ERROR("Unsupported image BPP %u!", bytes_per_pixel);
     fclose(file);
     return false;
   }*/
 
-  width = (int)header.image_width;
-  height = (int)header.image_height;
+  image->width = (int)header.image_width;
+  image->height = (int)header.image_height;
 
-  const u32 image_data_len = width * height * bytes_per_pixel;
-  data = (u8*)allocator->allocate(sizeof(u8) * image_data_len, MemoryTag::Texture);
-  if (data == nullptr) {
+  const u32 image_data_len = image->width * image->height * image->bytes_per_pixel;
+
+  image->data = (u8*)allocator->allocate(sizeof(u8) * image_data_len, MemoryTag::Texture);
+  if (image->data == nullptr) {
     LOG_ERROR("Failed to allocate image buffer for %s!", filename);
     fclose(file);
     return false;
   }
 
-  if (fread(data, sizeof(u8), image_data_len, file) != image_data_len) {
+  if (fread(image->data, sizeof(u8), image_data_len, file) != image_data_len) {
     LOG_ERROR("Failed to read data for %s!", filename);
     fclose(file);
     return false;
@@ -86,6 +73,13 @@ bool Image::load_tga_file(const char* filename) {
 
   fclose(file);
   return true;
+}
+
+void free_image(Image* image, DynamicAllocator* allocator) {
+  ASSERT(image != nullptr && allocator != nullptr);
+  allocator->free(image->data,
+      image->width * image->height * image->bytes_per_pixel,
+      MemoryTag::Texture);
 }
 
 } // namespace Themepark

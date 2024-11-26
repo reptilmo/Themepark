@@ -17,12 +17,14 @@ namespace Themepark {
 bool Renderer::startup(DynamicAllocator* allocator) {
   ASSERT(allocator != nullptr);
   global_allocator = allocator;
-  vertex_arrays.startup(global_allocator, MemoryTag::Renderer);  
+  vertex_arrays.init(global_allocator, MemoryTag::Renderer);
+  active_textures.init(global_allocator, MemoryTag::Renderer);
   return true;
 }
 
 void Renderer::shutdown() {
-  vertex_arrays.shutdown();
+  vertex_arrays.clear();
+  active_textures.clear();
 }
 
 u32 Renderer::build_shader_program(const DynArray<i8>* vertex, const DynArray<i8>* fragment) {
@@ -105,18 +107,59 @@ void Renderer::shader_set_uniform(i32 location, u32 value) {
   glUniform1i(location, value);
 }
 
+void Renderer::shader_set_uniform(i32 location, const vec3* data, u32 count) {
+  glUniform3fv(location, count, (GLfloat*)data);
+}
+
 u32 Renderer::build_texture_2d(const Image* image) {
   u32 texture_id = 0;
-
   glGenTextures(1, &texture_id);
   glBindTexture(GL_TEXTURE_2D, texture_id);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height,
-      0, GL_RGB, GL_UNSIGNED_BYTE, image->data);
+      0, GL_BGR, GL_UNSIGNED_BYTE, image->data);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glBindTexture(GL_TEXTURE_2D, 0);
+  return texture_id;
+}
+
+u32 Renderer::build_texture_cube(const Image* images) {
+  u32 texture_id = 0;
+  glGenTextures(1, &texture_id);
+
+  glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+  glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGB,
+      images[0].width, images[0].height, 0, GL_BGRA, GL_UNSIGNED_BYTE, images[0].data);
+
+  glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+  glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGB,
+      images[1].width, images[1].height, 0, GL_BGRA, GL_UNSIGNED_BYTE, images[1].data);
+
+  glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+  glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGB,
+      images[2].width, images[2].height, 0, GL_BGRA, GL_UNSIGNED_BYTE, images[2].data);
+
+  glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+  glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGB,
+      images[3].width, images[3].height, 0, GL_BGRA, GL_UNSIGNED_BYTE, images[3].data);
+
+  glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+  glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGB,
+      images[4].width, images[4].height, 0, GL_BGRA, GL_UNSIGNED_BYTE, images[4].data);
+
+  glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+  glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGB,
+      images[5].width, images[5].height, 0, GL_BGRA, GL_UNSIGNED_BYTE, images[5].data);
+
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+  glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+  glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
   return texture_id;
 }
 
@@ -158,8 +201,10 @@ void Renderer::set_viewport(i32 left, i32 top, i32 width, i32 height) {
 void Renderer::enable_texture_mapping(bool enable) {
   if (enable) {
     glEnable(GL_TEXTURE_2D);
+    glEnable(GL_TEXTURE_CUBE_MAP);
   } else {
     glDisable(GL_TEXTURE_2D);
+    glDisable(GL_TEXTURE_CUBE_MAP);
   }
 }
 
@@ -176,6 +221,7 @@ void Renderer::begin_frame() {
 }
 
 void Renderer::end_frame() {
+  active_textures.reset();
   active_texture_units = 0;
 }
 
@@ -183,18 +229,38 @@ void Renderer::use_shader_program(u32 program_handle) {
   glUseProgram(program_handle);
 }
 
-void Renderer::use_texture_2d(u32 texture_handle) {
-  glActiveTexture(GL_TEXTURE0 + active_texture_units);
-  glBindTexture(GL_TEXTURE_2D, texture_handle);
+u32 Renderer::use_texture_2d(u32 texture_handle) {
+  ActiveTexture at{active_texture_units, texture_handle};
+  glActiveTexture(GL_TEXTURE0 + at.texture_unit);
+  glBindTexture(GL_TEXTURE_2D, at.texture_id);
+  active_textures.push_back(at);
   active_texture_units++;
+  return at.texture_unit;
 }
 
-void Renderer::render_vertex_array(u32 idx) {
+u32 Renderer::use_texture_cube(u32 texture_handle) {
+  ActiveTexture at{active_texture_units, texture_handle};
+  glActiveTexture(GL_TEXTURE0 + at.texture_unit);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, at.texture_id);
+  active_textures.push_back(at);
+  active_texture_units++;
+  return at.texture_unit;
+}
+
+void Renderer::draw_vertex_array(u32 idx) {
   ASSERT(idx < vertex_arrays.size());
   VertexArray va = vertex_arrays[idx];
   glBindVertexArray(va.vao);
   glDrawArrays(GL_TRIANGLES, 0, va.element_count);
   //glDrawArrays(GL_LINE_LOOP, 0, va.element_count); // TODO:
+  glBindVertexArray(0);
+}
+
+void Renderer::draw_vertex_array_instanced(u32 idx, u32 instances) {
+  ASSERT(idx < vertex_arrays.size());
+  VertexArray va = vertex_arrays[idx];
+  glBindVertexArray(va.vao);
+  glDrawArraysInstanced(GL_TRIANGLES, 0, va.element_count, instances);
   glBindVertexArray(0);
 }
 

@@ -22,7 +22,7 @@ void Camera::startup(const vec3& pos, const vec3& up, f32 yaw, f32 pitch) {
 
 void Camera::shutdown() {}
 
-mat4 Camera::view_matrix(Input* input, f32 delta_time) {
+void Camera::update_view_matrices(CameraMatrixBlock* block, Input* input, f32 delta_time) {
   
   const f32 pitch_delta = VIEW_FACTOR * input->mouse_delta_y() * delta_time;
   const f32 yaw_delta = VIEW_FACTOR * input->mouse_delta_x() * delta_time;
@@ -48,12 +48,16 @@ mat4 Camera::view_matrix(Input* input, f32 delta_time) {
   left.normalize();
   vec3 up = cross(forward, left);
 
-  const mat4 rotate{{
-    left.x, up.x, forward.x, 0,
-    left.y, up.y, forward.y, 0,
-    left.z, up.z, forward.z, 0,
-    0,      0,    0,         1,
-  }};
+  block->rotation.m[0] = left.x;
+  block->rotation.m[1] = up.x;
+  block->rotation.m[2] = forward.x;
+  block->rotation.m[4] = left.y;
+  block->rotation.m[5] = up.y;
+  block->rotation.m[6] = forward.y;
+  block->rotation.m[8] = left.z;
+  block->rotation.m[9] = up.z;
+  block->rotation.m[10] = forward.z;
+  block->rotation.m[15] = 1.0F;
 
   if (input->move_forward()) {
     position -= (forward * move_factor);
@@ -71,7 +75,15 @@ mat4 Camera::view_matrix(Input* input, f32 delta_time) {
     position -= (left * move_factor);
   }
 
-  return mat4_translate(-position.x, -position.y, -position.z) * rotate;
+  if (input->move_up()) {
+    position.y += (move_factor);
+  }
+
+  if (input->move_down()) {
+    position.y -= (move_factor);
+  }
+
+  block->view = mat4_translate(-position.x, -position.y, -position.z) * block->rotation;
 }
 
 } // namespace Themepark

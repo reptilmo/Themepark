@@ -17,16 +17,22 @@ public:
   DynArray() = default;
   ~DynArray() = default;
 
-  void startup(DynamicAllocator* alloc, MemoryTag t) {
+  void init(DynamicAllocator* alloc, MemoryTag t) {
     ASSERT(alloc != nullptr);
     ASSERT(t != MemoryTag::Unknown);
     allocator = alloc;
     tag = t;
   }
 
-  void shutdown() {
+  void reset() {
+    used = 0;
+  }
+
+  void clear() {
     ASSERT(allocator != nullptr);
     allocator->free(buffer, sizeof(T) * capacity, tag);
+    capacity = 0;
+    used = 0;
   }
 
   const T* data() const {
@@ -83,10 +89,10 @@ private:
     buffer = new_buffer;
   }
 
-  DynamicAllocator* allocator{};
   T* buffer{};
   u64 capacity{};
   u64 used{};
+  DynamicAllocator* allocator{};
   MemoryTag tag{};
 };
 

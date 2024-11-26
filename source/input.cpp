@@ -15,6 +15,8 @@ Input::Input()
 , kb_move_back(SDL_SCANCODE_DOWN)
 , kb_move_left(SDL_SCANCODE_LEFT)
 , kb_move_right(SDL_SCANCODE_RIGHT)
+, kb_move_up(SDL_SCANCODE_PAGEUP)
+, kb_move_down(SDL_SCANCODE_PAGEDOWN)
 , mouse_primary(0)
 , mouse_secondary(1)
 , mouse_tertiary(2)
@@ -82,7 +84,6 @@ bool Input::update(void* window, u32 width, u32 height) {
   return false;
 }
 
-
 bool Input::move_forward() {
   return keyboard_keys[kb_move_forward];
 }
@@ -97,6 +98,14 @@ bool Input::move_left() {
 
 bool Input::move_right() {
   return keyboard_keys[kb_move_right];
+}
+
+bool Input::move_up() {
+  return keyboard_keys[kb_move_up];
+}
+
+bool Input::move_down() {
+  return keyboard_keys[kb_move_down];
 }
 
 bool Input::mouse_primary_pressed() {

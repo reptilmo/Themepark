@@ -24,6 +24,8 @@ public:
   bool move_back();
   bool move_left();
   bool move_right();
+  bool move_up();
+  bool move_down();
   bool mouse_primary_pressed();
   bool mouse_secondary_pressed();
   bool mouse_tertiary_pressed();
@@ -38,6 +40,8 @@ private:
   i32 kb_move_back;
   i32 kb_move_left;
   i32 kb_move_right;
+  i32 kb_move_up;
+  i32 kb_move_down;
 
   i32 mouse_primary;
   i32 mouse_secondary;

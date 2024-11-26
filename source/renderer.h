@@ -23,9 +23,11 @@ public:
   bool startup(DynamicAllocator* allocator);
   void shutdown();
 
+  //TODO: Improve shader building interface, extend to other types of shaders.
   u32 build_shader_program(const DynArray<i8>* vertex, const DynArray<i8>* fragment);
   u32 build_vertex_array(const Mesh* mesh);
   u32 build_texture_2d(const Image* image);
+  u32 build_texture_cube(const Image* images);
 
   void delete_textures();
 
@@ -40,12 +42,16 @@ public:
   void end_frame();
 
   void use_shader_program(u32 program_handle);
-  void use_texture_2d(u32 texture_handle);
-  void render_vertex_array(u32 idx);
+  u32 use_texture_2d(u32 texture_handle); // returns texture unit
+  u32 use_texture_cube(u32 texture_handle); // returns texture unit
+
+  void draw_vertex_array(u32 idx);
+  void draw_vertex_array_instanced(u32 idx, u32 instances);
 
   i32 shader_uniform_location(u32 handle, const char* uniform_name);
   void shader_set_uniform(i32 location, const mat4& m);
   void shader_set_uniform(i32 location, u32 value);
+  void shader_set_uniform(i32 location, const vec3* data, u32 count);
 
 protected:
   struct VertexArray {
@@ -60,10 +66,9 @@ protected:
   };
 
   u32 active_texture_units = 0;
-
-  DynamicAllocator* global_allocator = nullptr;
   DynArray<VertexArray> vertex_arrays;
   DynArray<ActiveTexture> active_textures;
+  DynamicAllocator* global_allocator = nullptr;
 };
 
 } // namespace Themepark

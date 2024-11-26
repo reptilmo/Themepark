@@ -9,15 +9,15 @@
 namespace Themepark {
 
 Mesh::Mesh(DynamicAllocator* allocator) {
-  positions.startup(allocator, MemoryTag::Mesh);
-  normals.startup(allocator, MemoryTag::Mesh);
-  texture_uvs.startup(allocator, MemoryTag::Mesh);
-  triangles.startup(allocator, MemoryTag::Mesh);
-  vertices.startup(allocator, MemoryTag::Mesh);
+  positions.init(allocator, MemoryTag::Mesh);
+  normals.init(allocator, MemoryTag::Mesh);
+  texture_uvs.init(allocator, MemoryTag::Mesh);
+  triangles.init(allocator, MemoryTag::Mesh);
+  vertices.init(allocator, MemoryTag::Mesh);
 }
 
 Mesh::~Mesh() {
-  vertices.shutdown();
+  vertices.clear();
 }
 
 bool Mesh::load_from_obj(const char* filename) {
@@ -114,10 +114,10 @@ bool Mesh::load_from_obj(const char* filename) {
     vertices.push_back(c);
   }
 
-  positions.shutdown();
-  normals.shutdown();
-  texture_uvs.shutdown();
-  triangles.shutdown();
+  positions.clear();
+  normals.clear();
+  texture_uvs.clear();
+  triangles.clear();
 
   fclose(file);
   return true;

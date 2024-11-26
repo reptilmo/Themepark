@@ -10,19 +10,14 @@
 
 namespace Themepark {
 
-struct Image final {
-  DISABLE_COPY_AND_MOVE(Image);
-public:
-  Image(DynamicAllocator* allocator);
-  ~Image();
-
-  bool load_tga_file(const char* filename);
-
+struct Image {
   u8* data;
   u32 width;
   u32 height;
   u32 bytes_per_pixel;
-  DynamicAllocator* allocator;
 };
+
+bool load_tga_file(Image* image, DynamicAllocator* allocator, const char* filename);
+void free_image(Image* image);
 
 } // namespace Themepark

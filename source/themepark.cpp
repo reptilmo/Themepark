@@ -51,26 +51,6 @@ bool themepark_startup(u32 view_width, u32 view_height) {
     return false;
   }
 
-  Image skybox_images[6];
-  if (!load_skybox_images(skybox_images, &allocator)) {
-    return false;
-  }
-
-  Image tent_color{};
-  if (!load_tga_file(&tent_color, &allocator, system_base_dir("assets/tent_color.tga"))) {
-    return false;
-  }
-
-  Image image{};
-  if (!load_tga_file(&image, &allocator, system_base_dir("assets/platform2.tga"))) {
-    return false;
-  }
-
-  Image image2{};
-  if (!load_tga_file(&image2, &allocator, system_base_dir("assets/ground.tga"))) {
-    return false;
-  }
-
   Mesh platform(&allocator);
   if (!platform.load_from_obj(system_base_dir("assets/platform.obj"))) {
     return false;
@@ -95,12 +75,10 @@ bool themepark_startup(u32 view_width, u32 view_height) {
     return false;
   }
 
-  platform_texture = renderer.build_texture_2d(&image);
-  ground_texture = renderer.build_texture_2d(&image2);
-  tent_texture = renderer.build_texture_2d(&tent_color);
+  if (!build_texture_objects()) {
+    return false;
+  }
 
-  skybox_texture = renderer.build_texture_cube(skybox_images);
-  free_skybox_images(skybox_images, &allocator);
 
   va_platform = renderer.build_vertex_array(&platform);
   va_cube = renderer.build_vertex_array(&cube);
@@ -164,6 +142,7 @@ void themepark_run(RunContext* context) {
 }
 
 void themepark_shutdown() {
+  tent_locations.clear();
   renderer.shutdown();
   allocator.shutdown();
 }
@@ -198,6 +177,36 @@ bool build_shader_programs() {
   return true;
 }
 
+bool build_texture_objects() {
+  Image skybox_images[6];
+  if (!load_skybox_images(skybox_images, &allocator)) {
+    return false;
+  }
+  skybox_texture = renderer.build_texture_cube(skybox_images);
+  free_skybox_images(skybox_images, &allocator);
+  Image tent_color{};
+  if (!load_tga_file(&tent_color, &allocator, system_base_dir("assets/tent_color.tga"))) {
+    return false;
+  }
+  tent_texture = renderer.build_texture_2d(&tent_color);
+  free_image(&tent_color, &allocator);
+
+  Image image{};
+  if (!load_tga_file(&image, &allocator, system_base_dir("assets/platform2.tga"))) {
+    return false;
+  }
+
+  Image image2{};
+  if (!load_tga_file(&image2, &allocator, system_base_dir("assets/ground.tga"))) {
+    return false;
+  }
+
+  platform_texture = renderer.build_texture_2d(&image);
+  ground_texture = renderer.build_texture_2d(&image2);
+
+  return true;
+}
+
 bool load_skybox_images(Image* images, DynamicAllocator* allocator) {
   if (load_tga_file(&images[0], allocator, system_base_dir("assets/pz.tga"))) {
     if (load_tga_file(&images[1], allocator, system_base_dir("assets/nz.tga"))) {
@@ -217,9 +226,7 @@ bool load_skybox_images(Image* images, DynamicAllocator* allocator) {
 
 void free_skybox_images(Image* images, DynamicAllocator* allocator) {
   for (i8 i = 0; i < 6; i++) {
-    allocator->free(images[i].data,
-        images[i].bytes_per_pixel * images[i].width * images[i].height,
-        MemoryTag::Texture);
+    free_image(&images[i], allocator);
   }
 }
 

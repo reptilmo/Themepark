@@ -18,6 +18,6 @@ struct Image {
 };
 
 bool load_tga_file(Image* image, DynamicAllocator* allocator, const char* filename);
-void free_image(Image* image);
+void free_image(Image* image, DynamicAllocator* allocator);
 
 } // namespace Themepark

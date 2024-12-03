@@ -13,8 +13,7 @@
 #include "input.h"
 #include "camera.h"
 #include "image.h"
-
-#include <glad/glad.h>
+#include "hierarchical.h"
 
 namespace Themepark {
 
@@ -28,22 +27,26 @@ u32 skybox_texture = 0;
 u32 skybox_program = 0;
 u32 tent_color = 0;
 u32 tent_texture = 0;
+u32 ferris_color = 0;
+f32 wheel_rotation_angle = 0.0F;
 
 DynamicAllocator allocator;
 Renderer renderer;
 Camera camera;
 CameraMatrixBlock camera_block;
 DynArray<vec3> tent_locations;
+HierarchicalModel ferris_wheel;
 
 bool load_skybox_images(Image* images, DynamicAllocator* allocator);
 void free_skybox_images(Image* images, DynamicAllocator* allocator);
-bool load_tent_locations(DynArray<vec3>* locations);
+bool load_vec3_file(DynArray<vec3>* data, const char* filename);
 bool build_shader_programs();
 bool build_mesh_vertex_arrays(); //TODO:
 bool build_texture_objects();    //TODO:
+bool build_ferris_wheel();
 
 bool themepark_startup(u32 view_width, u32 view_height) {
-  if (!allocator.startup(MiB(200))) {
+  if (!allocator.startup(MiB(50))) {
     return false;
   }
 
@@ -67,7 +70,7 @@ bool themepark_startup(u32 view_width, u32 view_height) {
   }
 
   tent_locations.init(&allocator, MemoryTag::Mesh);
-  if (!load_tent_locations(&tent_locations)) {
+  if (!load_vec3_file(&tent_locations, system_base_dir("assets/tent.map"))) {
     return false;
   }
 
@@ -79,10 +82,12 @@ bool themepark_startup(u32 view_width, u32 view_height) {
     return false;
   }
 
+  if (!build_ferris_wheel()) {
+    return false;
+  }
 
   va_platform = renderer.build_vertex_array(&platform);
   va_cube = renderer.build_vertex_array(&cube);
-  va_skybox = renderer.build_vertex_array(&skybox);
 
   camera.startup(vec3{0.0F, 10.0F, 5.0F}, vec3(0.0F, 1.0F, 0.0F), -90, 0);
   renderer.set_clear_color(0.0F, 0.2F, 0.5F);
@@ -100,7 +105,7 @@ void themepark_run(RunContext* context) {
 
   renderer.begin_frame();
   glDepthMask(GL_FALSE); //TODO:
-  glFrontFace(GL_CW);    //TODO:
+  //glFrontFace(GL_CW);    //TODO:
   renderer.use_shader_program(skybox_program);
   renderer.shader_set_uniform(
       renderer.shader_uniform_location(skybox_program, "view"), camera_block.rotation);
@@ -110,10 +115,14 @@ void themepark_run(RunContext* context) {
       renderer.use_texture_cube(skybox_texture));
 
   renderer.draw_vertex_array(va_skybox);
-  glFrontFace(GL_CCW);  //TODO:
+  //glFrontFace(GL_CCW);  //TODO:
   glDepthMask(GL_TRUE); //TODO:
 
   renderer.use_shader_program(world_program);
+  vec3 p(0, 0, 0);
+  renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "instance_position"),
+      &p, 1);
+
   renderer.shader_set_uniform(
       renderer.shader_uniform_location(world_program, "model"), model);
   renderer.shader_set_uniform(
@@ -125,12 +134,32 @@ void themepark_run(RunContext* context) {
       renderer.use_texture_2d(platform_texture));
   renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "second_texture"),
       renderer.use_texture_2d(ground_texture));
-
   renderer.draw_vertex_array(va_platform);
 
-  model = mat4_scale(3, 2, 3); //* mat4_translate(0, 3, 5);
+  wheel_rotation_angle += (10.0F * context->delta_time);
+  ferris_wheel.shader_program = world_program;
+
+  ferris_wheel.hierarchy[1].rotation = mat4_rotate_z(Math::RADIANS(wheel_rotation_angle));
+  const ModelNode& wheel = ferris_wheel.hierarchy[1];
+  for (i8 i = 0; i < wheel.child_count; ++i) {
+    u32 idx = wheel.child_idx[i];
+    ferris_wheel.hierarchy[idx].rotation = mat4_rotate_z(Math::RADIANS(-wheel_rotation_angle));
+  }
+
+  renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "first_texture"),
+      renderer.use_texture_2d(ferris_color));
+  renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "second_texture"),
+      renderer.use_texture_2d(ferris_color));
+
+  ferris_wheel.hierarchy[0].translation = mat4_translate(-5, 11.45F, -80);
+  renderer.draw_hierarchical(&ferris_wheel);
+
+  ferris_wheel.hierarchy[0].translation = mat4_translate(25, 11.45F, 60);
+  renderer.draw_hierarchical(&ferris_wheel);
+
+  model = mat4_scale(3, 2, 3);
   renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "model"), model);
-  renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "tent_position"),
+  renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "instance_position"),
       tent_locations.data(), tent_locations.size());
   renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "first_texture"),
       renderer.use_texture_2d(tent_texture));
@@ -145,6 +174,48 @@ void themepark_shutdown() {
   tent_locations.clear();
   renderer.shutdown();
   allocator.shutdown();
+}
+
+bool build_ferris_wheel() {
+  mat4 rotation = mat4_identity();
+  mat4 translation = mat4_identity();
+
+  ferris_wheel.init(&allocator);
+
+  Mesh base(&allocator);
+  if (!base.load_from_obj(system_base_dir("assets/base.obj"))) {
+    return false;
+  }
+
+  u32 va = renderer.build_vertex_array(&base);
+  u32 parent = ferris_wheel.set_root_node(va, rotation, translation);
+
+  Mesh wheel(&allocator);
+  if (!wheel.load_from_obj(system_base_dir("assets/wheel.obj"))) {
+    return false;
+  }
+
+  va = renderer.build_vertex_array(&wheel);
+  parent = ferris_wheel.add_child_node(parent, va, rotation, translation, nullptr, 0);
+
+  Mesh basket(&allocator);
+  if (!basket.load_from_obj(system_base_dir("assets/basket.obj"))) {
+    return false;
+  }
+
+  DynArray<vec3> basket_positions;
+  basket_positions.init(&allocator, MemoryTag::Mesh);
+  if (!load_vec3_file(&basket_positions, system_base_dir("assets/basket.map"))) {
+    return false;
+  }
+
+  va = renderer.build_vertex_array(&basket);
+  for (u64 i = 0; i < basket_positions.size(); ++i) {
+    const vec3& p = basket_positions[i];
+    ferris_wheel.add_child_node(parent, va, rotation, mat4_translate(p.x, p.y, p.z), nullptr, 0);
+  }
+
+  return true;
 }
 
 bool build_shader_programs() {
@@ -204,6 +275,13 @@ bool build_texture_objects() {
   platform_texture = renderer.build_texture_2d(&image);
   ground_texture = renderer.build_texture_2d(&image2);
 
+  Image image3{};
+  if (!load_tga_file(&image3, &allocator, system_base_dir("assets/ferris_color.tga"))) {
+    return false;
+  }
+
+  ferris_color = renderer.build_texture_2d(&image3);
+
   return true;
 }
 
@@ -230,11 +308,11 @@ void free_skybox_images(Image* images, DynamicAllocator* allocator) {
   }
 }
 
-bool load_tent_locations(DynArray<vec3>* locations) {
-  ASSERT(locations != nullptr);
-  FILE* file = fopen(system_base_dir("assets/tent.map"), "r");
+bool load_vec3_file(DynArray<vec3>* data, const char* filename) {
+  ASSERT(data != nullptr);
+  FILE* file = fopen(filename, "r");
   if (file == nullptr) {
-    LOG_ERROR("Failed to open %s!", "assets/tent.map");
+    LOG_ERROR("Failed to open %s!", filename);
     return false;
   }
 
@@ -247,18 +325,17 @@ bool load_tent_locations(DynArray<vec3>* locations) {
     }
 
     if (strncmp(buf, "#", 1) != 0) {
-      vec3 loc;
+      vec3 v;
 
-      if (sscanf(buf, "%f %f %f\n", &loc.x, &loc.y, &loc.z) == 3) {
-        locations->push_back(loc);
+      if (sscanf(buf, "%f %f %f\n", &v.x, &v.y, &v.z) == 3) {
+        data->push_back(v);
       } else {
-        LOG_ERROR("MAP loader: failed to parse \"%s\"", buf);
+        LOG_ERROR("Failed to parse \"%s\"", buf);
       }
     }
   }
 
   return true;
 }
-
 
 } // namespace Themepark

@@ -18,6 +18,8 @@ add_executable(project
     image.cpp
     mesh.h
     mesh.cpp
+    hierarchical.h
+    hierarchical.cpp
     camera.h
     camera.cpp
     renderer.h

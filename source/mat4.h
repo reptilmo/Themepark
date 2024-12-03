@@ -48,6 +48,17 @@ inline mat4 operator* (const mat4& l, const mat4& r) {
   }};
 }
 
+inline mat4 mat4_rotate_z(f32 radians) {
+  const f32 c = Math::cos(radians);
+  const f32 s = Math::sin(radians);
+  return mat4{{
+    c, -s, 0, 0,
+    s,  c, 0, 0,
+    0,  0, 1, 0,
+    0,  0, 0, 1,
+  }};
+}
+
 inline mat4 mat4_translate(f32 x, f32 y, f32 z) {
   return mat4{{
     1, 0, 0, 0,

@@ -8,6 +8,7 @@
 #include "defines.h"
 #include "dynarray.h"
 #include "mat4.h"
+#include "hierarchical.h"
 
 namespace Themepark {
 
@@ -45,13 +46,22 @@ public:
   u32 use_texture_2d(u32 texture_handle); // returns texture unit
   u32 use_texture_cube(u32 texture_handle); // returns texture unit
 
-  void draw_vertex_array(u32 idx);
-  void draw_vertex_array_instanced(u32 idx, u32 instances);
-
   i32 shader_uniform_location(u32 handle, const char* uniform_name);
   void shader_set_uniform(i32 location, const mat4& m);
   void shader_set_uniform(i32 location, u32 value);
   void shader_set_uniform(i32 location, const vec3* data, u32 count);
+
+  void draw_vertex_array(u32 idx);
+  void draw_vertex_array_instanced(u32 idx, u32 instances);
+  void draw_hierarchical(const HierarchicalModel* model);
+
+protected:
+  void draw_hierarchical_impl(
+      const DynArray<ModelNode>& nodes,
+      const mat4& parent_transform,
+      i32 transform_uniform,
+      i32 instance_uniform,
+      u32 current_node_idx);
 
 protected:
   struct VertexArray {

@@ -30,13 +30,24 @@ public:
 
   void clear() {
     ASSERT(allocator != nullptr);
-    allocator->free(buffer, sizeof(T) * capacity, tag);
-    capacity = 0;
-    used = 0;
+    if (buffer != nullptr) {
+      allocator->free(buffer, sizeof(T) * capacity, tag);
+      buffer = nullptr;
+      capacity = 0;
+      used = 0;
+    }
   }
 
   const T* data() const {
     return buffer;
+  }
+
+  T* release_data() {
+    T* data = buffer;
+    buffer = nullptr;
+    capacity = 0;
+    used = 0;
+    return data;
   }
 
   u64 size() const {
@@ -52,7 +63,6 @@ public:
     ASSERT(i >= 0 && i < used);
     return buffer[i];
   }
-
 
   void push_back(T& value) {
     if (used >= capacity) {

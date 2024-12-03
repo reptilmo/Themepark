@@ -264,4 +264,39 @@ void Renderer::draw_vertex_array_instanced(u32 idx, u32 instances) {
   glBindVertexArray(0);
 }
 
+void Renderer::draw_hierarchical(const HierarchicalModel* model) {
+  i32 transform_uniform = shader_uniform_location(model->shader_program, "model");
+  i32 instance_uniform = shader_uniform_location(model->shader_program, "instance_position");
+  mat4 identity = mat4_identity();
+  draw_hierarchical_impl(model->hierarchy, identity, transform_uniform, instance_uniform, 0);
+}
+
+void Renderer::draw_hierarchical_impl(
+    const DynArray<ModelNode>& nodes,
+    const mat4& parent_transform,
+    i32 transform_uniform,
+    i32 instance_uniform,
+    u32 current_node_idx) {
+
+  static const vec3 zero{};
+
+  const ModelNode& node = nodes[current_node_idx];
+  mat4 transform = node.rotation * node.translation * parent_transform;
+  shader_set_uniform(transform_uniform, transform);
+  if (node.instances > 1) {
+    shader_set_uniform(instance_uniform, node.instance_positions, node.instances);
+    draw_vertex_array_instanced(node.vertex_array_idx, node.instances);
+  } else {
+    shader_set_uniform(instance_uniform, &zero, 1);
+    draw_vertex_array(node.vertex_array_idx);
+  }
+
+  for (i8 i = 0; i < node.child_count; ++i) {
+    draw_hierarchical_impl(nodes, transform,
+        transform_uniform,
+        instance_uniform,
+        node.child_idx[i]);
+  }
+}
+
 } // namespace Themepark

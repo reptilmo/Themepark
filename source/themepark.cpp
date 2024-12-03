@@ -123,6 +123,7 @@ void themepark_run(RunContext* context) {
   renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "instance_position"),
       &p, 1);
 
+  model = mat4_scale(0.5F, 1.0F, 0.5F);
   renderer.shader_set_uniform(
       renderer.shader_uniform_location(world_program, "model"), model);
   renderer.shader_set_uniform(

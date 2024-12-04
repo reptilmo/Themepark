@@ -17,15 +17,51 @@ namespace Themepark {
 bool Renderer::startup(DynamicAllocator* allocator) {
   ASSERT(allocator != nullptr);
   global_allocator = allocator;
+  shader_programs.init(global_allocator, MemoryTag::Renderer);
   vertex_arrays.init(global_allocator, MemoryTag::Renderer);
   active_textures.init(global_allocator, MemoryTag::Renderer);
   return true;
 }
 
 void Renderer::shutdown() {
+  shader_programs.clear();
   vertex_arrays.clear();
   active_textures.clear();
+}  
+/*
+u32 Renderer::begin_shader_program() {
+  ShaderProgram program{};
+  u32 program = glCreateProgram();
+
+  ASSERT(program > 0);
+  return program;
 }
+
+bool Renderer::program_add_shader(u32 program, ShaderType type, const DynArray<i8>* shader_text) {
+  ASSERT(shader_text != nullptr && shader_text->size() > 0);
+  GLint success = 0;
+
+  const GLuint shader_handle = glCreateShader((GLenum)type);
+  const GLchar* shader_data = (const GLchar*)vertex->data();
+  const GLint shader_len = vertex->size();
+  glShaderSource(shader_handle, 1, &shader_data, &shader_len);
+
+  glCompileShader(shader_handle);
+  glGetShaderiv(shader_handle, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    GLchar info[MAX_GL_LOG_LEN] = {};
+    glGetShaderInfoLog(vertex_handle, MAX_GL_LOG_LEN, nullptr, info);
+    LOG_ERROR("Renderer: failed to compile %d shader!\n%s",  (u32)type, info);
+    return false;
+  }
+
+  glAttachShader(program, shader_handle);
+  return true;
+}
+
+bool link_shader_program(u32 program) {
+*/
+
 
 u32 Renderer::build_shader_program(const DynArray<i8>* vertex, const DynArray<i8>* fragment) {
   ASSERT(vertex != nullptr && vertex->size() > 0);

@@ -15,6 +15,13 @@ namespace Themepark {
 class Mesh;
 class Image;
 
+enum class ShaderType {
+  VERTEX = 0,
+  TESS_CTRL,
+  TESS_EVAL,
+  FRAGMENT,
+};
+
 class Renderer {
   DISABLE_COPY_AND_MOVE(Renderer);
 public:
@@ -23,6 +30,10 @@ public:
 
   bool startup(DynamicAllocator* allocator);
   void shutdown();
+
+  u32 begin_shader_program();
+  bool program_add_shader(u32 program, ShaderType type, const DynArray<i8>* shader_text);
+  bool link_shader_program(u32 program);
 
   //TODO: Improve shader building interface, extend to other types of shaders.
   u32 build_shader_program(const DynArray<i8>* vertex, const DynArray<i8>* fragment);
@@ -75,7 +86,14 @@ protected:
     u32 texture_id;
   };
 
+  struct ShaderProgram {
+    u32 program_handle;
+    u32 shander_handles[6];
+    u32 shader_count;
+  };
+
   u32 active_texture_units = 0;
+  DynArray<ShaderProgram> shader_programs;
   DynArray<VertexArray> vertex_arrays;
   DynArray<ActiveTexture> active_textures;
   DynamicAllocator* global_allocator = nullptr;

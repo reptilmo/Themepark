@@ -229,7 +229,10 @@ bool build_shader_programs() {
 
   if (read_file(&vertex_shader, system_base_dir("shaders/skybox.v.shader"))
       && read_file(&fragment_shader, system_base_dir("shaders/skybox.f.shader"))) {
-    skybox_program = renderer.build_shader_program(&vertex_shader, &fragment_shader);
+    u32 idx = renderer.begin_shader_program();
+    renderer.program_add_shader(idx, ShaderType::Vertex, &vertex_shader);
+    renderer.program_add_shader(idx, ShaderType::Fragment, &fragment_shader);
+    skybox_program = renderer.link_shader_program(idx);
   } else {
     return false;
   }
@@ -239,7 +242,10 @@ bool build_shader_programs() {
 
   if (read_file(&vertex_shader, system_base_dir("shaders/world.v.shader"))
       && read_file(&fragment_shader, system_base_dir("shaders/world.f.shader"))) {
-    world_program = renderer.build_shader_program(&vertex_shader, &fragment_shader);
+    u32 idx = renderer.begin_shader_program();
+    renderer.program_add_shader(idx, ShaderType::Vertex, &vertex_shader);
+    renderer.program_add_shader(idx, ShaderType::Fragment, &fragment_shader);
+    world_program = renderer.link_shader_program(idx);
   } else {
     return false;
   }

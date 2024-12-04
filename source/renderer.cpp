@@ -13,6 +13,23 @@
 #define MAX_GL_LOG_LEN 2048
 
 namespace Themepark {
+namespace {
+constexpr GLenum ShaderGLType(ShaderType type) {
+  switch (type) {
+    case ShaderType::Vertex:
+      return GL_VERTEX_SHADER;
+    case ShaderType::TessCtrl:
+      return GL_TESS_CONTROL_SHADER;
+    case ShaderType::TessEval:
+      return GL_TESS_EVALUATION_SHADER;
+    case ShaderType::Fragment:
+    default:
+      return GL_FRAGMENT_SHADER;
+  }
+}
+
+} // anon namespace
+
 
 bool Renderer::startup(DynamicAllocator* allocator) {
   ASSERT(allocator != nullptr);
@@ -27,104 +44,77 @@ void Renderer::shutdown() {
   shader_programs.clear();
   vertex_arrays.clear();
   active_textures.clear();
-}  
-/*
-u32 Renderer::begin_shader_program() {
-  ShaderProgram program{};
-  u32 program = glCreateProgram();
-
-  ASSERT(program > 0);
-  return program;
 }
 
-bool Renderer::program_add_shader(u32 program, ShaderType type, const DynArray<i8>* shader_text) {
+u32 Renderer::begin_shader_program() {
+  ShaderProgram program;
+  memset(&program, 0, sizeof(ShaderProgram));
+  program.program_handle = glCreateProgram();
+  shader_programs.push_back(program);
+  return shader_programs.size() - 1;
+}
+
+bool Renderer::program_add_shader(u32 program_idx, ShaderType type, const DynArray<i8>* shader_text) {
+  ASSERT(program_idx >= 0 && program_idx < shader_programs.size());
   ASSERT(shader_text != nullptr && shader_text->size() > 0);
   GLint success = 0;
 
-  const GLuint shader_handle = glCreateShader((GLenum)type);
-  const GLchar* shader_data = (const GLchar*)vertex->data();
-  const GLint shader_len = vertex->size();
+  const GLuint shader_handle = glCreateShader(ShaderGLType(type));
+  const GLchar* shader_data = (const GLchar*)shader_text->data();
+  const GLint shader_len = shader_text->size();
   glShaderSource(shader_handle, 1, &shader_data, &shader_len);
 
   glCompileShader(shader_handle);
   glGetShaderiv(shader_handle, GL_COMPILE_STATUS, &success);
   if (!success) {
     GLchar info[MAX_GL_LOG_LEN] = {};
-    glGetShaderInfoLog(vertex_handle, MAX_GL_LOG_LEN, nullptr, info);
+    glGetShaderInfoLog(shader_handle, MAX_GL_LOG_LEN, nullptr, info);
     LOG_ERROR("Renderer: failed to compile %d shader!\n%s",  (u32)type, info);
     return false;
   }
 
-  glAttachShader(program, shader_handle);
+  ShaderProgram& program = shader_programs[program_idx];
+  program.shader_handles[program.shader_count] = shader_handle;
+  program.shader_count++;
+
   return true;
 }
 
-bool link_shader_program(u32 program) {
-*/
-
-
-u32 Renderer::build_shader_program(const DynArray<i8>* vertex, const DynArray<i8>* fragment) {
-  ASSERT(vertex != nullptr && vertex->size() > 0);
-  ASSERT(fragment != nullptr && fragment->size() > 0);
-
-  u32 program_handle = glCreateProgram();
-  ASSERT(program_handle > 0);
+u32 Renderer::link_shader_program(u32 program_idx) {
+  ASSERT(program_idx >= 0 && program_idx < shader_programs.size());
   GLint success = 0;
+  u32 i = 0;
+  GLchar info[MAX_GL_LOG_LEN];
 
-  const GLuint vertex_handle = glCreateShader(GL_VERTEX_SHADER);
-  const GLchar* vert_data = (const GLchar*)vertex->data();
-  const GLint vert_len = vertex->size();
-  glShaderSource(vertex_handle, 1, &vert_data, &vert_len);
-
-  glCompileShader(vertex_handle);
-  glGetShaderiv(vertex_handle, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    GLchar info[MAX_GL_LOG_LEN] = {};
-    glGetShaderInfoLog(vertex_handle, MAX_GL_LOG_LEN, nullptr, info);
-    LOG_ERROR("Renderer: failed to compile vertex shader!\n%s", info);
-    return 0;
+  ShaderProgram& program = shader_programs[program_idx];
+  for (i = 0; i < program.shader_count; ++i) {
+    glAttachShader(program.program_handle, program.shader_handles[i]);
   }
 
-  const GLuint fragment_handle = glCreateShader(GL_FRAGMENT_SHADER);
-  const GLchar* frag_data = (const GLchar*)fragment->data();
-  const GLint frag_len = fragment->size();
-  glShaderSource(fragment_handle, 1, &frag_data, &frag_len);
-
-  glCompileShader(fragment_handle);
-  glGetShaderiv(fragment_handle, GL_COMPILE_STATUS, &success);
+  glLinkProgram(program.program_handle);
+  glGetProgramiv(program.program_handle, GL_LINK_STATUS, &success);
   if (!success) {
-    GLchar info[MAX_GL_LOG_LEN] = {};
-    glGetShaderInfoLog(fragment_handle, MAX_GL_LOG_LEN, nullptr, info);
-    LOG_ERROR("Renderer: failed to compile fragment shader!\n%s", info);
-    return 0;
-  }
-
-  glAttachShader(program_handle, vertex_handle);
-  glAttachShader(program_handle, fragment_handle);
-  glLinkProgram(program_handle);
-  glGetProgramiv(program_handle, GL_LINK_STATUS, &success);
-  if (!success) {
-    GLchar info[MAX_GL_LOG_LEN];
-    glGetProgramInfoLog(program_handle, MAX_GL_LOG_LEN, nullptr, info);
+    memset(info, 0, sizeof(GLchar) * MAX_GL_LOG_LEN);
+    glGetProgramInfoLog(program.program_handle, MAX_GL_LOG_LEN, nullptr, info);
     LOG_ERROR("Renderer: failed to link shader program!\n%s", info);
     return 0;
   }
 
-  glDetachShader(program_handle, vertex_handle);
-  glDeleteShader(vertex_handle);
-  glDetachShader(program_handle, fragment_handle);
-  glDeleteShader(fragment_handle);
+  for (i = 0; i < program.shader_count; ++i) {
+    glDetachShader(program.program_handle, program.shader_handles[i]);
+    glDeleteShader(program.shader_handles[i]);
+  }
 
-  glValidateProgram(program_handle);
-  glGetProgramiv(program_handle, GL_VALIDATE_STATUS, &success);
+  glValidateProgram(program.program_handle);
+  glGetProgramiv(program.program_handle, GL_VALIDATE_STATUS, &success);
   if (!success) {
-    GLchar info[MAX_GL_LOG_LEN];
-    glGetProgramInfoLog(program_handle, MAX_GL_LOG_LEN, nullptr, info);
+    memset(info, 0, sizeof(GLchar) * MAX_GL_LOG_LEN);
+    glGetProgramInfoLog(program.program_handle, MAX_GL_LOG_LEN, nullptr, info);
     LOG_ERROR("Renderer: shader program failed validation!\n%s", info);
     return 0;
   }
 
-  return program_handle;
+  return program.program_handle;
 }
 
 i32 Renderer::shader_uniform_location(u32 handle, const char* uniform_name) {

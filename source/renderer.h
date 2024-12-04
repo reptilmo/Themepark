@@ -16,10 +16,10 @@ class Mesh;
 class Image;
 
 enum class ShaderType {
-  VERTEX = 0,
-  TESS_CTRL,
-  TESS_EVAL,
-  FRAGMENT,
+  Vertex = 0,
+  TessCtrl,
+  TessEval,
+  Fragment,
 };
 
 class Renderer {
@@ -31,12 +31,10 @@ public:
   bool startup(DynamicAllocator* allocator);
   void shutdown();
 
-  u32 begin_shader_program();
-  bool program_add_shader(u32 program, ShaderType type, const DynArray<i8>* shader_text);
-  bool link_shader_program(u32 program);
+  u32 begin_shader_program(); // returns index
+  bool program_add_shader(u32 program_idx, ShaderType type, const DynArray<i8>* shader_text);
+  u32 link_shader_program(u32 program_idx); // returns handle
 
-  //TODO: Improve shader building interface, extend to other types of shaders.
-  u32 build_shader_program(const DynArray<i8>* vertex, const DynArray<i8>* fragment);
   u32 build_vertex_array(const Mesh* mesh);
   u32 build_texture_2d(const Image* image);
   u32 build_texture_cube(const Image* images);
@@ -88,7 +86,7 @@ protected:
 
   struct ShaderProgram {
     u32 program_handle;
-    u32 shander_handles[6];
+    u32 shader_handles[6];
     u32 shader_count;
   };
 

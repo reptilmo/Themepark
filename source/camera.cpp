@@ -5,6 +5,7 @@
 
 #include "camera.h"
 #include "input.h"
+#include "logging.h"
 
 #define VIEW_FACTOR 10.0F
 #define MOVE_FACTOR 10.0F
@@ -59,6 +60,8 @@ void Camera::update_view_matrices(CameraMatrixBlock* block, Input* input, f32 de
   block->rotation.m[10] = forward.z;
   block->rotation.m[15] = 1.0F;
 
+  position_old = position;
+
   if (input->move_forward()) {
     position -= (forward * move_factor);
   }
@@ -81,6 +84,10 @@ void Camera::update_view_matrices(CameraMatrixBlock* block, Input* input, f32 de
 
   if (input->move_down()) {
     position.y -= (move_factor);
+  }
+
+  if (!equal(position, position_old)) {
+    //LOG_INFO("Camera position: %0.3f\t%0.3f\t%0.3f", position.x, position.y, position.z);
   }
 
   block->view = mat4_translate(-position.x, -position.y, -position.z) * block->rotation;

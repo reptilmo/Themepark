@@ -31,6 +31,7 @@ public:
 
 private:
   vec3 position{};
+  vec3 position_old{};
   vec3 world_up{};
   f32 vertical_angle{};
   f32 horizontal_angle{};

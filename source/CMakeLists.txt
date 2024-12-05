@@ -3,6 +3,7 @@ add_executable(project
     math.h
     vec2.h
     vec3.h
+    vec4.h
     mat4.h
     memory.h
     memory.cpp

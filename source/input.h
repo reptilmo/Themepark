@@ -20,6 +20,16 @@ public:
 
   bool update(void* window, u32 width, u32 height);
 
+  // TODO: Replace with generic key_pressed/key_was_pressed functions.
+  bool space_key_pressed();
+  bool space_key_was_pressed();
+
+  bool s_key_pressed();
+  bool s_key_was_pressed();
+
+  bool w_key_pressed();
+  bool w_key_was_pressed();
+
   bool move_forward();
   bool move_back();
   bool move_left();
@@ -33,7 +43,8 @@ public:
   f32 mouse_delta_y();
 
 private:
-  bool keyboard_keys[512];
+  bool keyboard_keys_new[512];
+  bool keyboard_keys_old[512];
   bool mouse_buttons[24];
 
   i32 kb_move_forward;

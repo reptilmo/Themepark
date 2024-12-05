@@ -107,4 +107,10 @@ inline vec3 cross(const vec3& a, const vec3& b) {
   };
 }
 
+inline bool equal(const vec3& a, const vec3& b) {
+  return Math::abs(a.x - b.x) <= Math::EPSILON * Math::max(a.x, b.x)
+    && Math::abs(a.y - b.y) <= Math::EPSILON * Math::max(a.y, b.y)
+    && Math::abs(a.z - b.z) <= Math::EPSILON * Math::max(a.z, b.z);
+}
+
 } // namespace Themepark

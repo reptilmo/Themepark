@@ -30,7 +30,6 @@ constexpr GLenum ShaderGLType(ShaderType type) {
 
 } // anon namespace
 
-
 bool Renderer::startup(DynamicAllocator* allocator) {
   ASSERT(allocator != nullptr);
   global_allocator = allocator;
@@ -137,6 +136,10 @@ void Renderer::shader_set_uniform(i32 location, const vec3* data, u32 count) {
   glUniform3fv(location, count, (GLfloat*)data);
 }
 
+void Renderer::shader_set_uniform(i32 location, const vec4* data, u32 count) {
+  glUniform4fv(location, count, (GLfloat*)data);
+}
+
 u32 Renderer::build_texture_2d(const Image* image) {
   u32 texture_id = 0;
   glGenTextures(1, &texture_id);
@@ -241,6 +244,14 @@ void Renderer::enable_depth_test(bool enable) {
     glDisable(GL_DEPTH_TEST);
   }
 }
+
+void Renderer::enable_wireframe_mode(bool enable) {
+  if (enable) {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  } else {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  }
+}
   
 void Renderer::begin_frame() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -278,7 +289,6 @@ void Renderer::draw_vertex_array(u32 idx) {
   VertexArray va = vertex_arrays[idx];
   glBindVertexArray(va.vao);
   glDrawArrays(GL_TRIANGLES, 0, va.element_count);
-  //glDrawArrays(GL_LINE_LOOP, 0, va.element_count); // TODO:
   glBindVertexArray(0);
 }
 
@@ -287,6 +297,24 @@ void Renderer::draw_vertex_array_instanced(u32 idx, u32 instances) {
   VertexArray va = vertex_arrays[idx];
   glBindVertexArray(va.vao);
   glDrawArraysInstanced(GL_TRIANGLES, 0, va.element_count, instances);
+  glBindVertexArray(0);
+}
+
+void Renderer::draw_vertex_array_triangle_patches(u32 idx) {
+  ASSERT(idx < vertex_arrays.size());
+  VertexArray va = vertex_arrays[idx];
+  glBindVertexArray(va.vao);
+  glPatchParameteri(GL_PATCH_VERTICES, 3);
+  glDrawArrays(GL_PATCHES, 0, va.element_count);
+  glBindVertexArray(0);
+}
+
+void Renderer::draw_vertex_array_triangle_patches_instanced(u32 idx, u32 instances) {
+  ASSERT(idx < vertex_arrays.size());
+  VertexArray va = vertex_arrays[idx];
+  glBindVertexArray(va.vao);
+  glPatchParameteri(GL_PATCH_VERTICES, 3);
+  glDrawArraysInstanced(GL_PATCHES, 0, va.element_count, instances);
   glBindVertexArray(0);
 }
 

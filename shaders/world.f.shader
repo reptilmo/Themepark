@@ -1,4 +1,4 @@
-#version 430 core
+#version 460 core
 in vec3 position_eye;
 in vec3 normal_eye;
 in vec2 st;
@@ -22,15 +22,19 @@ vec3 Kd = vec3(1.0, 0.5, 0.0); // Orange diffuse surface reflectance
 vec3 Ks = vec3(1.0, 1.0, 1.0); // Fully reflect specular light
 
 const float specular_power = 100.0;
+vec3 inside_factor = vec3(0.2, 0.2, 0.2);
 
 void main() {
+  if (gl_FrontFacing) {
+    inside_factor = vec3(1.0, 1.0, 1.0);
+  }
   // Ambient intensity
-  vec3 Ia = La * Ka * vec3(float(gl_FrontFacing), float(gl_FrontFacing), float(gl_FrontFacing));
+  vec3 Ia = La * Ka * inside_factor;
   // Diffuse intensity
   vec3 light_position_eye = vec3(view * vec4(light_position, 1.0));
   vec3 direction_to_light_eye = normalize(light_position_eye - position_eye);
   float d = max(dot(direction_to_light_eye, normal_eye), 0.0);
-  vec3 Id = Ld * Kd * d * vec3(float(gl_FrontFacing), float(gl_FrontFacing), float(gl_FrontFacing));
+  vec3 Id = Ld * Kd * d * inside_factor;
   // Specular intencity
   vec3 reflection_eye = reflect(-direction_to_light_eye, normal_eye);
   vec3 surface_to_viewer = normalize(-position_eye);

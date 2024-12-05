@@ -10,6 +10,7 @@
 namespace Themepark {
 namespace Math {
 
+constexpr f32 EPSILON = FLT_EPSILON;
 constexpr f32 PI = static_cast<f32>(M_PI);
 constexpr f32 HALF_PI = PI * 0.5F;
 
@@ -36,6 +37,10 @@ inline f32 rsqrt(f32 f) {
 
 inline f32 abs(f32 f) {
   return fabs(f);
+}
+
+inline f32 max(f32 a, f32 b) {
+  return fmaxf(a, b);
 }
 
 } // namespace Math

@@ -47,6 +47,7 @@ public:
 
   void enable_texture_mapping(bool enable);
   void enable_depth_test(bool enable);
+  void enable_wireframe_mode(bool enable);
 
   void begin_frame();
   void end_frame();
@@ -59,9 +60,12 @@ public:
   void shader_set_uniform(i32 location, const mat4& m);
   void shader_set_uniform(i32 location, u32 value);
   void shader_set_uniform(i32 location, const vec3* data, u32 count);
+  void shader_set_uniform(i32 location, const vec4* data, u32 count);
 
   void draw_vertex_array(u32 idx);
   void draw_vertex_array_instanced(u32 idx, u32 instances);
+  void draw_vertex_array_triangle_patches(u32 idx);
+  void draw_vertex_array_triangle_patches_instanced(u32 idx, u32 instances);
   void draw_hierarchical(const HierarchicalModel* model);
 
 protected:

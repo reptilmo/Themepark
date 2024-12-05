@@ -8,6 +8,7 @@
 #include "defines.h"
 #include "math.h"
 #include "vec3.h"
+#include "vec4.h"
 
 namespace Themepark {
 
@@ -56,6 +57,17 @@ inline mat4 mat4_rotate_z(f32 radians) {
     s,  c, 0, 0,
     0,  0, 1, 0,
     0,  0, 0, 1,
+  }};
+}
+
+inline mat4 mat4_rotate_y(f32 radians) {
+  const f32 c = Math::cos(radians);
+  const f32 s = Math::sin(radians);
+  return mat4{{
+    c, 0, s, 0,
+    0, 1, 0, 0,
+   -s, 0, c, 0,
+    0, 0, 0, 1,
   }};
 }
 

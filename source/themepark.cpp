@@ -9,6 +9,7 @@
 #include "memory.h"
 #include "mesh.h"
 #include "mat4.h"
+#include "vec4.h"
 #include "renderer.h"
 #include "input.h"
 #include "camera.h"
@@ -17,29 +18,36 @@
 
 namespace Themepark {
 
+
 u32 va_platform = 0;
-u32 va_cube = 0;
+u32 va_tent = 0;
 u32 va_skybox = 0;
+u32 va_octahedron = 0;
 u32 world_program = 0;
 u32 platform_texture = 0;
 u32 ground_texture = 0;
 u32 skybox_texture = 0;
 u32 skybox_program = 0;
+u32 balloon_program = 0;
 u32 tent_color = 0;
 u32 tent_texture = 0;
 u32 ferris_color = 0;
+
+bool wireframe = false;
 f32 wheel_rotation_angle = 0.0F;
+i32 tess_level = 0;
+i32 tess_step = 1;
 
 DynamicAllocator allocator;
 Renderer renderer;
 Camera camera;
 CameraMatrixBlock camera_block;
-DynArray<vec3> tent_locations;
+DynArray<vec4> tent_data;
 HierarchicalModel ferris_wheel;
 
 bool load_skybox_images(Image* images, DynamicAllocator* allocator);
 void free_skybox_images(Image* images, DynamicAllocator* allocator);
-bool load_vec3_file(DynArray<vec3>* data, const char* filename);
+bool load_vec4_file(DynArray<vec4>* data, const char* filename);
 bool build_shader_programs();
 bool build_mesh_vertex_arrays(); //TODO:
 bool build_texture_objects();    //TODO:
@@ -59,8 +67,8 @@ bool themepark_startup(u32 view_width, u32 view_height) {
     return false;
   }
 
-  Mesh cube(&allocator);
-  if (!cube.load_from_obj(system_base_dir("assets/tent.obj"))) {
+  Mesh tent(&allocator);
+  if (!tent.load_from_obj(system_base_dir("assets/tent.obj"))) {
     return false;
   }
 
@@ -69,8 +77,13 @@ bool themepark_startup(u32 view_width, u32 view_height) {
     return false;
   }
 
-  tent_locations.init(&allocator, MemoryTag::Mesh);
-  if (!load_vec3_file(&tent_locations, system_base_dir("assets/tent.map"))) {
+  Mesh octahedron(&allocator);
+  if (!octahedron.load_from_obj(system_base_dir("assets/octahedron.obj"))) {
+    return false;
+  }
+
+  tent_data.init(&allocator, MemoryTag::Mesh);
+  if (!load_vec4_file(&tent_data, system_base_dir("assets/tent.map"))) {
     return false;
   }
 
@@ -80,14 +93,18 @@ bool themepark_startup(u32 view_width, u32 view_height) {
 
   if (!build_texture_objects()) {
     return false;
+
   }
 
   if (!build_ferris_wheel()) {
     return false;
   }
 
+  va_skybox = renderer.build_vertex_array(&skybox);
   va_platform = renderer.build_vertex_array(&platform);
-  va_cube = renderer.build_vertex_array(&cube);
+  va_tent = renderer.build_vertex_array(&tent);
+  va_octahedron = renderer.build_vertex_array(&octahedron);
+
 
   camera.startup(vec3{0.0F, 10.0F, 5.0F}, vec3(0.0F, 1.0F, 0.0F), -90, 0);
   renderer.set_clear_color(0.0F, 0.2F, 0.5F);
@@ -98,6 +115,22 @@ bool themepark_startup(u32 view_width, u32 view_height) {
 }
 
 void themepark_run(RunContext* context) {
+  static const vec4 zero(0, 0, 0, 0);
+
+  if (context->input->w_key_pressed() && !context->input->w_key_was_pressed()) {
+    wireframe = !wireframe;
+    renderer.enable_wireframe_mode(wireframe);
+  }
+
+  if (context->input->s_key_pressed() && !context->input->s_key_was_pressed()) {
+    if (tess_level <= 0) {
+      tess_step = 1;
+    } else if (tess_level >= 11) {
+      tess_step = -1;
+    }
+    tess_level = tess_level + tess_step;
+  }
+
   mat4 model = mat4_translate(0, 0, 0);
   memset(&camera_block, 0, sizeof(CameraMatrixBlock));
   camera.update_view_matrices(&camera_block, context->input, context->delta_time);
@@ -119,9 +152,7 @@ void themepark_run(RunContext* context) {
   glDepthMask(GL_TRUE); //TODO:
 
   renderer.use_shader_program(world_program);
-  vec3 p(0, 0, 0);
-  renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "instance_position"),
-      &p, 1);
+  renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "instance_data"), &zero, 1);
 
   model = mat4_scale(0.5F, 1.0F, 0.5F);
   renderer.shader_set_uniform(
@@ -152,27 +183,48 @@ void themepark_run(RunContext* context) {
   renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "second_texture"),
       renderer.use_texture_2d(ferris_color));
 
-  ferris_wheel.hierarchy[0].translation = mat4_translate(-5, 11.45F, -80);
+  ferris_wheel.hierarchy[0].rotation = mat4_identity();
+  ferris_wheel.hierarchy[0].translation = mat4_translate(-6, 11.45F, -39);
   renderer.draw_hierarchical(&ferris_wheel);
 
-  ferris_wheel.hierarchy[0].translation = mat4_translate(25, 11.45F, 60);
+  ferris_wheel.hierarchy[0].rotation = mat4_rotate_y(Math::RADIANS(90));
+  ferris_wheel.hierarchy[0].translation = mat4_translate(-59.7, 11.45F, 43.9);
   renderer.draw_hierarchical(&ferris_wheel);
 
-  model = mat4_scale(3, 2, 3);
+  model = mat4_scale(2.5F, 2.5F, 2.5F);
   renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "model"), model);
-  renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "instance_position"),
-      tent_locations.data(), tent_locations.size());
+  renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "instance_data"),
+      tent_data.data(), tent_data.size());
   renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "first_texture"),
       renderer.use_texture_2d(tent_texture));
   renderer.shader_set_uniform(renderer.shader_uniform_location(world_program, "second_texture"),
       renderer.use_texture_2d(tent_texture));
 
-  renderer.draw_vertex_array_instanced(va_cube, tent_locations.size());
+  renderer.draw_vertex_array_instanced(va_tent, tent_data.size());
+
+  renderer.use_shader_program(balloon_program);
+  renderer.shader_set_uniform(renderer.shader_uniform_location(balloon_program, "tess_level"), tess_level);
+  renderer.shader_set_uniform(renderer.shader_uniform_location(balloon_program, "view"), camera_block.view);
+  renderer.shader_set_uniform(renderer.shader_uniform_location(balloon_program, "projection"), projection);
+  renderer.shader_set_uniform(renderer.shader_uniform_location(balloon_program, "skybox_texture"),
+      renderer.use_texture_cube(skybox_texture));
+
+  //renderer.draw_vertex_array_triangle_patches_instanced(va_octahedron, tent_data.size());
+  f32 wind_x = 0.9F * Math::sin(Math::RADIANS(wheel_rotation_angle));
+  f32 wind_y = 0.5F * Math::cos(Math::RADIANS(wheel_rotation_angle));
+  f32 wind_z = 0.7F * Math::sin(Math::RADIANS(wheel_rotation_angle));
+
+  for (u32 i = 0; i < tent_data.size(); ++i) {
+    model = mat4_translate(tent_data[i].x + wind_x, tent_data[i].y + 9.0 + wind_y, tent_data[i].z + wind_z);
+    renderer.shader_set_uniform(renderer.shader_uniform_location(balloon_program, "model"), model);
+    renderer.draw_vertex_array_triangle_patches(va_octahedron);
+  }
+
   renderer.end_frame();
 }
 
 void themepark_shutdown() {
-  tent_locations.clear();
+  tent_data.clear();
   renderer.shutdown();
   allocator.shutdown();
 }
@@ -204,15 +256,15 @@ bool build_ferris_wheel() {
     return false;
   }
 
-  DynArray<vec3> basket_positions;
+  DynArray<vec4> basket_positions;
   basket_positions.init(&allocator, MemoryTag::Mesh);
-  if (!load_vec3_file(&basket_positions, system_base_dir("assets/basket.map"))) {
+  if (!load_vec4_file(&basket_positions, system_base_dir("assets/basket.map"))) {
     return false;
   }
 
   va = renderer.build_vertex_array(&basket);
   for (u64 i = 0; i < basket_positions.size(); ++i) {
-    const vec3& p = basket_positions[i];
+    const vec4& p = basket_positions[i];
     ferris_wheel.add_child_node(parent, va, rotation, mat4_translate(p.x, p.y, p.z), nullptr, 0);
   }
 
@@ -220,38 +272,60 @@ bool build_ferris_wheel() {
 }
 
 bool build_shader_programs() {
-//TODO: Improve renderer shader building interface.
-  DynArray<i8> vertex_shader;
-  DynArray<i8> fragment_shader;
+  DynArray<i8> vertex;
+  DynArray<i8> fragment;
+  DynArray<i8> tess_ctrl;
+  DynArray<i8> tess_eval;
 
-  vertex_shader.init(&allocator, MemoryTag::Shader);
-  fragment_shader.init(&allocator, MemoryTag::Shader);
+  vertex.init(&allocator, MemoryTag::Shader);
+  fragment.init(&allocator, MemoryTag::Shader);
+  tess_ctrl.init(&allocator, MemoryTag::Shader);
+  tess_eval.init(&allocator, MemoryTag::Shader);
 
-  if (read_file(&vertex_shader, system_base_dir("shaders/skybox.v.shader"))
-      && read_file(&fragment_shader, system_base_dir("shaders/skybox.f.shader"))) {
+  if (read_file(&vertex, system_base_dir("shaders/skybox.v.shader"))
+      && read_file(&fragment, system_base_dir("shaders/skybox.f.shader"))) {
     u32 idx = renderer.begin_shader_program();
-    renderer.program_add_shader(idx, ShaderType::Vertex, &vertex_shader);
-    renderer.program_add_shader(idx, ShaderType::Fragment, &fragment_shader);
+    renderer.program_add_shader(idx, ShaderType::Vertex, &vertex);
+    renderer.program_add_shader(idx, ShaderType::Fragment, &fragment);
     skybox_program = renderer.link_shader_program(idx);
   } else {
     return false;
   }
 
-  vertex_shader.reset();
-  fragment_shader.reset();
+  vertex.reset();
+  fragment.reset();
 
-  if (read_file(&vertex_shader, system_base_dir("shaders/world.v.shader"))
-      && read_file(&fragment_shader, system_base_dir("shaders/world.f.shader"))) {
+  if (read_file(&vertex, system_base_dir("shaders/world.v.shader"))
+      && read_file(&fragment, system_base_dir("shaders/world.f.shader"))) {
     u32 idx = renderer.begin_shader_program();
-    renderer.program_add_shader(idx, ShaderType::Vertex, &vertex_shader);
-    renderer.program_add_shader(idx, ShaderType::Fragment, &fragment_shader);
+    renderer.program_add_shader(idx, ShaderType::Vertex, &vertex);
+    renderer.program_add_shader(idx, ShaderType::Fragment, &fragment);
     world_program = renderer.link_shader_program(idx);
   } else {
     return false;
   }
 
-  vertex_shader.clear();
-  fragment_shader.clear();
+  vertex.reset();
+  fragment.reset();
+
+  if (read_file(&vertex, system_base_dir("shaders/balloon.v.shader"))
+      && read_file(&tess_ctrl, system_base_dir("shaders/balloon.tc.shader"))
+      && read_file(&tess_eval, system_base_dir("shaders/balloon.te.shader"))
+      && read_file(&fragment, system_base_dir("shaders/balloon.f.shader"))) {
+    u32 idx = renderer.begin_shader_program();
+    renderer.program_add_shader(idx, ShaderType::Vertex, &vertex);
+    renderer.program_add_shader(idx, ShaderType::TessCtrl, &tess_ctrl);
+    renderer.program_add_shader(idx, ShaderType::TessEval, &tess_eval);
+    renderer.program_add_shader(idx, ShaderType::Fragment, &fragment);
+    balloon_program = renderer.link_shader_program(idx);
+  } else {
+    return false;
+  }
+
+  vertex.clear();
+  fragment.clear();
+  tess_ctrl.clear();
+  tess_eval.clear();
   return true;
 }
 
@@ -315,7 +389,7 @@ void free_skybox_images(Image* images, DynamicAllocator* allocator) {
   }
 }
 
-bool load_vec3_file(DynArray<vec3>* data, const char* filename) {
+bool load_vec4_file(DynArray<vec4>* data, const char* filename) {
   ASSERT(data != nullptr);
   FILE* file = fopen(filename, "r");
   if (file == nullptr) {
@@ -332,9 +406,9 @@ bool load_vec3_file(DynArray<vec3>* data, const char* filename) {
     }
 
     if (strncmp(buf, "#", 1) != 0) {
-      vec3 v;
+      vec4 v;
 
-      if (sscanf(buf, "%f %f %f\n", &v.x, &v.y, &v.z) == 3) {
+      if (sscanf(buf, "%f %f %f %f\n", &v.x, &v.y, &v.z, &v.w) == 4) {
         data->push_back(v);
       } else {
         LOG_ERROR("Failed to parse \"%s\"", buf);

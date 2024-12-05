@@ -24,7 +24,8 @@ Input::Input()
 , delta_y(0.0F)
 , mouse_sensitivity(0.5F) {
     
-  memset(keyboard_keys, 0, sizeof(keyboard_keys));
+  memset(keyboard_keys_new, 0, sizeof(keyboard_keys_new));
+  memset(keyboard_keys_old, 0, sizeof(keyboard_keys_old));
   memset(mouse_buttons, 0, sizeof(mouse_buttons));
 }
 
@@ -44,8 +45,10 @@ bool Input::update(void* window, u32 width, u32 height) {
     return true; // User quit.
   }
 
+  memcpy(keyboard_keys_old, keyboard_keys_new, sizeof(bool) * 512);
+
   for (int k = 0; k < key_count; ++k) {
-    keyboard_keys[k] = (key_state[k] != 0) ? true : false;
+    keyboard_keys_new[k] = (key_state[k] != 0) ? true : false;
   }
 
   f32 x, y;
@@ -84,28 +87,52 @@ bool Input::update(void* window, u32 width, u32 height) {
   return false;
 }
 
+bool Input::space_key_pressed() {
+  return keyboard_keys_new[SDL_SCANCODE_SPACE];
+}
+
+bool Input::space_key_was_pressed() {
+  return keyboard_keys_old[SDL_SCANCODE_SPACE];
+}
+
+bool Input::s_key_pressed() {
+  return keyboard_keys_new[SDL_SCANCODE_S];
+}
+
+bool Input::s_key_was_pressed() {
+  return keyboard_keys_old[SDL_SCANCODE_S];
+}
+
+bool Input::w_key_pressed() {
+  return keyboard_keys_new[SDL_SCANCODE_W];
+}
+
+bool Input::w_key_was_pressed() {
+  return keyboard_keys_old[SDL_SCANCODE_W];
+}
+
 bool Input::move_forward() {
-  return keyboard_keys[kb_move_forward];
+  return keyboard_keys_new[kb_move_forward];
 }
 
 bool Input::move_back() {
-  return keyboard_keys[kb_move_back];
+  return keyboard_keys_new[kb_move_back];
 }
 
 bool Input::move_left() {
-  return keyboard_keys[kb_move_left];
+  return keyboard_keys_new[kb_move_left];
 }
 
 bool Input::move_right() {
-  return keyboard_keys[kb_move_right];
+  return keyboard_keys_new[kb_move_right];
 }
 
 bool Input::move_up() {
-  return keyboard_keys[kb_move_up];
+  return keyboard_keys_new[kb_move_up];
 }
 
 bool Input::move_down() {
-  return keyboard_keys[kb_move_down];
+  return keyboard_keys_new[kb_move_down];
 }
 
 bool Input::mouse_primary_pressed() {

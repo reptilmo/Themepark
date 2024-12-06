@@ -16,8 +16,9 @@
 #include "image.h"
 #include "hierarchical.h"
 
-namespace Themepark {
+#define TESSELLATION_MAX 15
 
+namespace Themepark {
 
 u32 va_platform = 0;
 u32 va_tent = 0;
@@ -105,7 +106,6 @@ bool themepark_startup(u32 view_width, u32 view_height) {
   va_tent = renderer.build_vertex_array(&tent);
   va_octahedron = renderer.build_vertex_array(&octahedron);
 
-
   camera.startup(vec3{0.0F, 10.0F, 5.0F}, vec3(0.0F, 1.0F, 0.0F), -90, 0);
   renderer.set_clear_color(0.0F, 0.2F, 0.5F);
   renderer.set_viewport(0, 0, view_width, view_height);
@@ -125,7 +125,7 @@ void themepark_run(RunContext* context) {
   if (context->input->s_key_pressed() && !context->input->s_key_was_pressed()) {
     if (tess_level <= 0) {
       tess_step = 1;
-    } else if (tess_level >= 11) {
+    } else if (tess_level >= TESSELLATION_MAX) {
       tess_step = -1;
     }
     tess_level = tess_level + tess_step;
@@ -209,7 +209,7 @@ void themepark_run(RunContext* context) {
   renderer.shader_set_uniform(renderer.shader_uniform_location(balloon_program, "skybox_texture"),
       renderer.use_texture_cube(skybox_texture));
 
-  //renderer.draw_vertex_array_triangle_patches_instanced(va_octahedron, tent_data.size());
+  //renderer.draw_vertex_array_triangle_patches_instanced(va_octahedron, tent_data.size()); //TODO: Doesn't work correctly :/
   f32 wind_x = 0.9F * Math::sin(Math::RADIANS(wheel_rotation_angle));
   f32 wind_y = 0.5F * Math::cos(Math::RADIANS(wheel_rotation_angle));
   f32 wind_z = 0.7F * Math::sin(Math::RADIANS(wheel_rotation_angle));
